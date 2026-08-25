@@ -1,0 +1,27 @@
+{
+  "event": "SALES_INVOICE_CREATED",
+  "company": {
+    "name": "Demo Company",
+    "gstin": "27AAAAA1111A1Z1",
+    "address": "Mumbai, Maharashtra, India"
+  },
+  "invoice": {
+    "voucherNumber": "INV-2026-001",
+    "date": "2026-08-24",
+    "partyName": "ABC Enterprise",
+    "mobile": "919876543210",
+    "subtotal": 2000,
+    "tax": 360,
+    "total": 2360
+  },
+  "items": [
+    {
+      "name": "Industrial Widget A",
+      "quantity": 2,
+      "rate": 1000,
+      "discount": 0,
+      "gst": 18,
+      "amount": 2000
+    }
+  ]
+}
