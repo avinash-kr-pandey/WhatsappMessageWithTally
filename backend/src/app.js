@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const mongoose = require('mongoose');
 
 const tallyRoutes = require('./routes/tally.routes');
 const whatsappRoutes = require('./routes/whatsapp.routes');
@@ -34,9 +33,6 @@ app.use('/api/whatsapp', whatsappRoutes);
 
 // 4. Health Check Endpoint
 app.get('/health', async (req, res) => {
-  // Check Database connection state
-  const dbState = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-  
   // Check Redis Queue Connection State
   const { Queue } = require('bullmq');
   const { redisConnection } = require('./config/redis');
@@ -53,12 +49,23 @@ app.get('/health', async (req, res) => {
     redisState = `disconnected (${e.message})`;
   }
 
+  // Check Tally Connection State
+  let tallyState = 'disconnected';
+  try {
+    const tallyService = require('./services/tally.service');
+    // Try sending a dummy request to check if Tally port is listening
+    await tallyService.sendXmlRequest('<ENVELOPE><HEADER><VERSION>1</VERSION><TALLYREQUEST>Export</TALLYREQUEST><TYPE>Data</TYPE><ID>DbInfo</ID></HEADER></ENVELOPE>');
+    tallyState = 'connected';
+  } catch (e) {
+    tallyState = `disconnected (${e.message})`;
+  }
+
   // Verify whatsapp configure vars state
   const hasWhatsAppConfig = config.whatsapp.accessToken && config.whatsapp.phoneNumberId ? 'configured' : 'missing';
 
   return successResponse(res, 'System Health Status', {
-    status: dbState === 'connected' && redisState === 'connected' ? 'ok' : 'degraded',
-    database: dbState,
+    status: redisState === 'connected' && tallyState === 'connected' ? 'ok' : 'degraded',
+    tally: tallyState,
     redis: redisState,
     whatsapp: hasWhatsAppConfig,
     timestamp: new Date()

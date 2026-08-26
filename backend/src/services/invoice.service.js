@@ -1,4 +1,4 @@
-const Invoice = require('../models/Invoice');
+const { redisClient } = require('../config/redis');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 
@@ -14,14 +14,20 @@ const generateIdempotencyKey = (companyName, voucherNumber, voucherDate) => {
  * Check if an invoice with a duplicate idempotency key exists
  */
 const getInvoiceByIdempotencyKey = async (key) => {
-  return await Invoice.findOne({ idempotencyKey: key });
+  try {
+    const data = await redisClient.get(`idempotency:${key}`);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    logger.error(`Error fetching idempotency key from Redis: ${error.message}`);
+    return null;
+  }
 };
 
 /**
- * Create a new invoice record in database
+ * Create a new invoice record in Redis database
  */
 const createInvoice = async (invoiceData, idempotencyKey) => {
-  const newInvoice = new Invoice({
+  const invoice = {
     voucherNumber: invoiceData.invoice.voucherNumber,
     voucherDate: new Date(invoiceData.invoice.date),
     partyName: invoiceData.invoice.partyName,
@@ -35,13 +41,39 @@ const createInvoice = async (invoiceData, idempotencyKey) => {
     idempotencyKey,
     status: 'PENDING',
     whatsappStatus: 'UNSENT'
-  });
+  };
 
-  return await newInvoice.save();
+  try {
+    // Cache for 7 days
+    await redisClient.setex(`idempotency:${idempotencyKey}`, 604800, JSON.stringify(invoice));
+  } catch (error) {
+    logger.error(`Error saving invoice to Redis: ${error.message}`);
+  }
+
+  return invoice;
+};
+
+/**
+ * Update status of an invoice in Redis
+ */
+const updateInvoiceStatus = async (idempotencyKey, updates) => {
+  try {
+    const invoice = await getInvoiceByIdempotencyKey(idempotencyKey);
+    if (invoice) {
+      Object.assign(invoice, updates);
+      // Keep existing TTL or reset to 7 days
+      await redisClient.setex(`idempotency:${idempotencyKey}`, 604800, JSON.stringify(invoice));
+      return invoice;
+    }
+  } catch (error) {
+    logger.error(`Error updating invoice status in Redis: ${error.message}`);
+  }
+  return null;
 };
 
 module.exports = {
   generateIdempotencyKey,
   getInvoiceByIdempotencyKey,
-  createInvoice
+  createInvoice,
+  updateInvoiceStatus
 };

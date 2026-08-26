@@ -1,29 +1,17 @@
-const Customer = require('../models/Customer');
 const logger = require('../utils/logger');
 
 /**
- * Find or create a customer by Ledger Name
+ * Mock/No-op Customer Upsert (Tally is the database)
  */
 const upsertCustomer = async (partyName, mobile, companyName) => {
-  try {
-    // Standardize mobile number
-    const normalizedMobile = mobile.replace(/[^0-9+]/g, '');
-
-    const customer = await Customer.findOneAndUpdate(
-      { tallyLedgerName: partyName },
-      {
-        name: partyName,
-        mobile: normalizedMobile,
-        companyName
-      },
-      { new: true, upsert: true }
-    );
-    logger.debug(`Customer details stored/updated: ${partyName} (${normalizedMobile})`);
-    return customer;
-  } catch (error) {
-    logger.error(`Failed to upsert customer detail: ${error.message}`);
-    throw error;
-  }
+  const normalizedMobile = mobile.replace(/[^0-9+]/g, '');
+  logger.debug(`[Tally DB] Customer resolved: ${partyName} (${normalizedMobile}) for ${companyName}`);
+  return {
+    name: partyName,
+    tallyLedgerName: partyName,
+    mobile: normalizedMobile,
+    companyName
+  };
 };
 
 module.exports = {

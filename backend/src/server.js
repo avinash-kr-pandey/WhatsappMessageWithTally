@@ -1,6 +1,5 @@
 const app = require('./app');
 const config = require('./config/env');
-const { connectDatabase } = require('./config/database');
 const logger = require('./utils/logger');
 
 // Auto import worker to launch BullMQ worker process on application boot
@@ -8,10 +7,7 @@ require('./queue/whatsapp.worker');
 
 const startServer = async () => {
   try {
-    // 1. Connect MongoDB
-    await connectDatabase();
-
-    // 2. Start Express Webhook Engine
+    // Start Express Webhook Engine
     const server = app.listen(config.port, () => {
       logger.info(`===================================================`);
       logger.info(` TALLY + WHATSAPP CONNECTOR RUNNING ON PORT: ${config.port} `);
@@ -23,10 +19,6 @@ const startServer = async () => {
     const shutdown = async () => {
       logger.info('Shutting down server gracefully...');
       server.close(async () => {
-        const mongoose = require('mongoose');
-        await mongoose.connection.close();
-        logger.info('MongoDB connection closed.');
-        
         const { whatsappWorker } = require('./queue/whatsapp.worker');
         if (whatsappWorker) {
           await whatsappWorker.close();

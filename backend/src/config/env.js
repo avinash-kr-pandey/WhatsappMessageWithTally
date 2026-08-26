@@ -8,7 +8,6 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 const envVarsSchema = joi.object({
   NODE_ENV: joi.string().valid('development', 'production', 'test').default('development'),
   PORT: joi.number().default(5000),
-  MONGODB_URI: joi.string().required().description('MongoDB connection URI'),
   REDIS_HOST: joi.string().required().description('Redis host name'),
   REDIS_PORT: joi.number().default(6379),
   TALLY_HOST: joi.string().default('localhost'),
@@ -35,9 +34,6 @@ if (error) {
 module.exports = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
-  mongodb: {
-    uri: envVars.MONGODB_URI
-  },
   redis: {
     host: envVars.REDIS_HOST,
     port: envVars.REDIS_PORT

@@ -4,7 +4,6 @@ const path = require('path');
 const FormData = require('form-data');
 const config = require('../config/env');
 const logger = require('../utils/logger');
-const WhatsAppMessage = require('../models/WhatsAppMessage');
 
 class WhatsAppService {
   constructor() {
@@ -30,23 +29,10 @@ class WhatsAppService {
   }
 
   /**
-   * Save outgoing messages to DB
+   * Log outgoing messages
    */
   async logMessage(messageId, to, type, content, status, direction = 'OUTBOUND', metadata = {}) {
-    try {
-      await WhatsAppMessage.create({
-        messageId,
-        phoneNumber: to,
-        direction,
-        type,
-        message: typeof content === 'string' ? content : JSON.stringify(content),
-        status,
-        timestamp: new Date(),
-        metadata
-      });
-    } catch (error) {
-      logger.error(`Error logging WhatsApp message in db: ${error.message}`);
-    }
+    logger.info(`[WhatsApp Message Log] MessageID: ${messageId} | Direction: ${direction} | To: ${to} | Type: ${type} | Status: ${status} | Message: ${typeof content === 'string' ? content : JSON.stringify(content)}`);
   }
 
   /**

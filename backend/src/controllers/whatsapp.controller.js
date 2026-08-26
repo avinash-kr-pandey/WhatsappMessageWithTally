@@ -1,8 +1,6 @@
 const config = require('../config/env');
 const whatsappService = require('../services/whatsapp.service');
 const tallyService = require('../services/tally.service');
-const WhatsAppMessage = require('../models/WhatsAppMessage');
-const Invoice = require('../models/Invoice');
 const { successResponse, errorResponse } = require('../utils/response');
 const logger = require('../utils/logger');
 
@@ -41,10 +39,6 @@ const handleWebhookEvent = async (req, res, next) => {
       for (const statusObj of value.statuses) {
         const { id: messageId, status, recipient_id } = statusObj;
         logger.info(`Received WhatsApp Message Status Update. Message ID: ${messageId}, Status: ${status}`);
-
-        // Update database statuses in WhatsAppMessage & Invoice records
-        await WhatsAppMessage.findOneAndUpdate({ messageId }, { status: status.toUpperCase() });
-        await Invoice.findOneAndUpdate({ whatsappMessageId: messageId }, { whatsappStatus: status.toUpperCase() });
       }
     }
 
@@ -57,17 +51,6 @@ const handleWebhookEvent = async (req, res, next) => {
         if (msg.type === 'text') {
           const body = msg.text.body.trim().toLowerCase();
           logger.info(`Received customer message from: ${from}. Message text: "${body}"`);
-
-          // Store incoming message to database
-          await WhatsAppMessage.create({
-            messageId,
-            phoneNumber: from,
-            direction: 'INBOUND',
-            type: 'text',
-            message: msg.text.body,
-            status: 'RECEIVED',
-            timestamp: new Date()
-          });
 
           // Resolve Commands Layer: "balance", "statement", "invoice", "last invoice", "payment"
           await handleTwoWayCommand(from, body);
@@ -87,15 +70,14 @@ const handleWebhookEvent = async (req, res, next) => {
  */
 const handleTwoWayCommand = async (fromMobile, commandText) => {
   try {
-    // 1. Resolve Ledger Name using customer phone database index
-    const Customer = require('../models/Customer');
-    const customer = await Customer.findOne({ mobile: new RegExp(fromMobile, 'i') });
+    // 1. Resolve Ledger Name directly from Tally
+    const customer = await tallyService.getLedgerByMobile(fromMobile);
 
     if (!customer) {
       logger.warn(`Received command from unregistered mobile: ${fromMobile}. Ignoring.`);
       await whatsappService.sendTextMessage(
         fromMobile,
-        `Hello! Your mobile number is not linked to any client ledger record in our database. Please contact support to register.`
+        `Hello! Your mobile number is not linked to any client ledger record in Tally. Please contact support to register.`
       );
       return;
     }
@@ -134,15 +116,32 @@ const handleTwoWayCommand = async (fromMobile, commandText) => {
 
       case 'last invoice':
       case 'invoice': {
-        const invoices = await Invoice.find({ partyName: ledgerName }).sort({ createdAt: -1 }).limit(1);
-        if (invoices.length > 0) {
-          const inv = invoices[0];
+        const tallyResponse = await tallyService.getLastInvoices(ledgerName, 1);
+        let invNo = null;
+        let invDate = null;
+        let invAmt = null;
+
+        try {
+          if (tallyResponse && tallyResponse.ENVELOPE && tallyResponse.ENVELOPE.BODY && tallyResponse.ENVELOPE.BODY.DATA && tallyResponse.ENVELOPE.BODY.DATA.COLLECTION) {
+            const collection = tallyResponse.ENVELOPE.BODY.DATA.COLLECTION;
+            if (collection.VOUCHER) {
+              const voucher = Array.isArray(collection.VOUCHER) ? collection.VOUCHER[0] : collection.VOUCHER;
+              invNo = voucher.VOUCHERNUMBER || (voucher.$ && voucher.$.VOUCHERNUMBER);
+              invDate = voucher.DATE || (voucher.$ && voucher.$.DATE);
+              invAmt = voucher.AMOUNT || (voucher.$ && voucher.$.AMOUNT);
+            }
+          }
+        } catch (e) {
+          logger.error(`Error parsing last invoice XML: ${e.message}`);
+        }
+
+        if (invNo) {
           await whatsappService.sendTextMessage(
             fromMobile,
-            `Hello!\nYour last Invoice details:\nInvoice No: *${inv.voucherNumber}*\nDate: *${inv.voucherDate.toISOString().split('T')[0]}*\nTotal Amount: *₹${inv.amount}*\nStatus: *${inv.whatsappStatus}*`
+            `Hello!\nYour last Invoice details:\nInvoice No: *${invNo}*\nDate: *${invDate}*\nTotal Amount: *₹${invAmt}*`
           );
         } else {
-          await whatsappService.sendTextMessage(fromMobile, `Hi ${customer.name}, we couldn't find any invoice records.`);
+          await whatsappService.sendTextMessage(fromMobile, `Hi ${customer.name}, we couldn't find any invoice records in Tally.`);
         }
         break;
       }

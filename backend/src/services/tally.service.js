@@ -180,6 +180,80 @@ class TallyService {
       return [];
     }
   }
+
+  /**
+   * Resolve a mobile number to a Ledger/Customer Name by querying Tally
+   */
+  async getLedgerByMobile(mobileNumber) {
+    logger.info(`Searching ledger for mobile: ${mobileNumber} in TallyPrime`);
+    const normalizedTarget = mobileNumber.replace(/[^0-9]/g, '');
+
+    // Get all ledgers with Name, LEDGERMOBILE, and LEDGERPHONE
+    const xml = `
+      <ENVELOPE>
+        <HEADER>
+          <VERSION>1</VERSION>
+          <TALLYREQUEST>Export</TALLYREQUEST>
+          <TYPE>Collection</TYPE>
+          <ID>AllLedgersWithPhone</ID>
+        </HEADER>
+        <BODY>
+          <DESC>
+            <STATICVARIABLES>
+              <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            </STATICVARIABLES>
+            <TDL>
+              <TDLMESSAGE>
+                <COLLECTION NAME="AllLedgersWithPhone">
+                  <TYPE>Ledger</TYPE>
+                  <FETCH>Name, LEDGERMOBILE, LEDGERPHONE</FETCH>
+                </COLLECTION>
+              </TDLMESSAGE>
+            </TDL>
+          </DESC>
+        </BODY>
+      </ENVELOPE>
+    `;
+
+    try {
+      const rawResponse = await this.sendXmlRequest(xml);
+      const parsed = await parseXml(rawResponse);
+      
+      // Parse list of ledgers
+      let ledgers = [];
+      if (parsed && parsed.ENVELOPE && parsed.ENVELOPE.BODY && parsed.ENVELOPE.BODY.DATA && parsed.ENVELOPE.BODY.DATA.COLLECTION) {
+        const collection = parsed.ENVELOPE.BODY.DATA.COLLECTION;
+        if (collection.LEDGER) {
+          ledgers = Array.isArray(collection.LEDGER) ? collection.LEDGER : [collection.LEDGER];
+        }
+      }
+
+      // Find ledger with matching phone
+      for (const ledger of ledgers) {
+        const name = ledger.NAME || (ledger.$ && ledger.$.NAME);
+        const mobile = typeof ledger.LEDGERMOBILE === 'string' ? ledger.LEDGERMOBILE : '';
+        const phone = typeof ledger.LEDGERPHONE === 'string' ? ledger.LEDGERPHONE : '';
+
+        const cleanMobile = mobile.replace(/[^0-9]/g, '');
+        const cleanPhone = phone.replace(/[^0-9]/g, '');
+
+        if ((cleanMobile && cleanMobile.endsWith(normalizedTarget)) || (cleanPhone && cleanPhone.endsWith(normalizedTarget)) || (normalizedTarget && (cleanMobile.includes(normalizedTarget) || cleanPhone.includes(normalizedTarget)))) {
+          logger.info(`Found matching Tally Ledger: "${name}" for phone: ${mobileNumber}`);
+          return {
+            name: name,
+            tallyLedgerName: name,
+            mobile: mobile || phone || mobileNumber
+          };
+        }
+      }
+      
+      logger.warn(`No matching Ledger found in Tally for phone: ${mobileNumber}`);
+      return null;
+    } catch (error) {
+      logger.error(`Error querying ledgers from Tally: ${error.message}`);
+      return null;
+    }
+  }
 }
 
 module.exports = new TallyService();

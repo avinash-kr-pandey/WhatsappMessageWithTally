@@ -26,7 +26,7 @@ const handleTallyInvoiceHook = async (req, res, next) => {
     if (existingInvoice) {
       logger.warn(`Duplicate invoice detected: ${invoice.voucherNumber} for company ${company.name}. Skipping processing.`);
       return successResponse(res, 'Invoice processed successfully (Duplicate request ignored)', {
-        invoiceId: existingInvoice._id,
+        idempotencyKey,
         status: existingInvoice.status,
         whatsappStatus: existingInvoice.whatsappStatus
       });
@@ -44,18 +44,18 @@ const handleTallyInvoiceHook = async (req, res, next) => {
 
     // 5. Enqueue background WhatsApp messaging job using BullMQ
     const job = await whatsappQueue.add('send-whatsapp', {
-      invoiceId: savedInvoice._id
+      invoiceData: savedInvoice,
+      idempotencyKey
     });
 
     // Update status in db to reflect queued state
-    savedInvoice.status = 'QUEUED';
-    await savedInvoice.save();
+    await invoiceService.updateInvoiceStatus(idempotencyKey, { status: 'QUEUED' });
 
     logger.info(`Enqueued WhatsApp job ${job.id} for Invoice: ${invoice.voucherNumber}`);
 
     // 6. Return response IMMEDIATELY to prevent blocking TallyPrime UI thread
     return successResponse(res, 'Invoice received successfully', {
-      invoiceId: savedInvoice._id,
+      idempotencyKey,
       jobId: job.id
     }, 201);
 

@@ -3,7 +3,7 @@ const { redisConnection } = require('../config/redis');
 const logger = require('../utils/logger');
 const { WHATSAPP_QUEUE_NAME } = require('./whatsapp.queue');
 const whatsappService = require('../services/whatsapp.service');
-const Invoice = require('../models/Invoice');
+const invoiceService = require('../services/invoice.service');
 const { generateInvoicePDF } = require('../utils/pdf');
 const fs = require('fs');
 
@@ -13,44 +13,49 @@ const fs = require('fs');
 const whatsappWorker = new Worker(
   WHATSAPP_QUEUE_NAME,
   async (job) => {
-    const { invoiceId } = job.data;
-    logger.info(`Starting execution of Queue Job ${job.id} for Invoice ID: ${invoiceId}`);
-
-    // 1. Fetch invoice from database
-    const invoice = await Invoice.findById(invoiceId);
-    if (!invoice) {
-      logger.error(`[Job ${job.id}] Invoice with ID ${invoiceId} not found in database. Skipping job.`);
-      return;
-    }
+    const { invoiceData, idempotencyKey } = job.data;
+    logger.info(`Starting execution of Queue Job ${job.id} for Invoice: ${invoiceData.voucherNumber}`);
 
     // Protection for double execution in worker layer
-    if (invoice.status === 'PROCESSED') {
-      logger.warn(`[Job ${job.id}] Invoice ${invoice.voucherNumber} already processed. Skipping duplicate workflow.`);
+    // Let's re-fetch status from Redis to ensure it wasn't already processed
+    const currentInvoice = await invoiceService.getInvoiceByIdempotencyKey(idempotencyKey);
+    if (!currentInvoice) {
+      logger.error(`[Job ${job.id}] Invoice with idempotencyKey ${idempotencyKey} not found in cache. Skipping job.`);
       return;
     }
+
+    if (currentInvoice.status === 'PROCESSED') {
+      logger.warn(`[Job ${job.id}] Invoice ${currentInvoice.voucherNumber} already processed. Skipping duplicate workflow.`);
+      return;
+    }
+
+    // Ensure voucherDate is a proper Date object for pdf generator
+    currentInvoice.voucherDate = new Date(currentInvoice.voucherDate);
 
     let pdfPath = null;
     try {
       // 2. Generate the PDF invoice
-      pdfPath = await generateInvoicePDF(invoice);
+      pdfPath = await generateInvoicePDF(currentInvoice);
 
       // 3. Send template + PDF invoice message via WhatsApp API
-      const apiResponse = await whatsappService.sendInvoiceMessage(invoice.mobile, invoice, pdfPath);
+      const apiResponse = await whatsappService.sendInvoiceMessage(currentInvoice.mobile, currentInvoice, pdfPath);
       const messageId = apiResponse.messages[0].id;
 
-      // 4. Update MongoDB record status to reflect success
-      invoice.status = 'PROCESSED';
-      invoice.whatsappStatus = 'SENT';
-      invoice.whatsappMessageId = messageId;
-      await invoice.save();
+      // 4. Update status to reflect success
+      await invoiceService.updateInvoiceStatus(idempotencyKey, {
+        status: 'PROCESSED',
+        whatsappStatus: 'SENT',
+        whatsappMessageId: messageId
+      });
 
       logger.info(`[Job ${job.id}] Finished successfully. WhatsApp Message ID: ${messageId}`);
     } catch (error) {
       logger.error(`[Job ${job.id}] Job failed with error: ${error.message}`);
       
-      invoice.status = 'FAILED';
-      invoice.whatsappStatus = 'FAILED';
-      await invoice.save();
+      await invoiceService.updateInvoiceStatus(idempotencyKey, {
+        status: 'FAILED',
+        whatsappStatus: 'FAILED'
+      });
 
       throw error; // Re-throw error to trigger BullMQ retry backoff policies
     } finally {
