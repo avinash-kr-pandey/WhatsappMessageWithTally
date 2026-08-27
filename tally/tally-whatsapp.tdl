@@ -45,11 +45,11 @@
     20 : SET : CompanyAddress : $$JSONCleanString:($$Location:$$SelectedCompany)
     
     30 : SET : PartyName : $$JSONCleanString:$PartyLedgerName
-    40 : SET : PartyMobile : $$JSONCleanString:($$LEDGERMOBILE:$$PartyLedgerName)
+    40 : SET : PartyMobile : $$JSONCleanString:($LEDGERMOBILE:Ledger:##PartyName)
     
     ;; Fallback validation to use Ledger Phone if Mobile field is empty
     50 : IF : $$IsEmpty:##PartyMobile
-    60 :   SET : PartyMobile : $$JSONCleanString:($$LEDGERPHONE:$$PartyLedgerName)
+    60 :   SET : PartyMobile : $$JSONCleanString:($LEDGERPHONE:Ledger:##PartyName)
     70 : ENDIF
     
     ;; Set default test mobile if empty
