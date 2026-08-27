@@ -27,35 +27,19 @@ const verifyWebhook = (req, res) => {
  */
 const handleWebhookEvent = async (req, res, next) => {
   try {
-    const { entry } = req.validatedBody;
-    if (!entry || entry.length === 0) {
-      return successResponse(res, 'No events found');
-    }
+    const payload = req.validatedBody;
 
-    const value = entry[0].changes[0].value;
+    // Check if it's an inbound text message
+    if (payload.boundType === 'in' && payload.itemType === 'text') {
+      const from = payload.senderNumber; // Customer mobile number
+      const body = (payload.value || '').trim().toLowerCase();
 
-    // A. Handle Status Updates (sent, delivered, read, failed)
-    if (value.statuses && value.statuses.length > 0) {
-      for (const statusObj of value.statuses) {
-        const { id: messageId, status, recipient_id } = statusObj;
-        logger.info(`Received WhatsApp Message Status Update. Message ID: ${messageId}, Status: ${status}`);
-      }
-    }
+      logger.info(`Received customer message from: ${from}. Message text: "${body}"`);
 
-    // B. Handle Customer Inbound Message (Two-way integration commands)
-    if (value.messages && value.messages.length > 0) {
-      for (const msg of value.messages) {
-        const from = msg.from; // Sender Mobile Number
-        const messageId = msg.id;
-        
-        if (msg.type === 'text') {
-          const body = msg.text.body.trim().toLowerCase();
-          logger.info(`Received customer message from: ${from}. Message text: "${body}"`);
-
-          // Resolve Commands Layer: "balance", "statement", "invoice", "last invoice", "payment"
-          await handleTwoWayCommand(from, body);
-        }
-      }
+      // Resolve Commands Layer: "balance", "statement", "invoice", "last invoice"
+      await handleTwoWayCommand(from, body);
+    } else {
+      logger.info(`Received webhook event: boundType=${payload.boundType}, itemType=${payload.itemType}, value=${payload.value}`);
     }
 
     return successResponse(res, 'Webhook event processed');
@@ -87,6 +71,23 @@ const handleTwoWayCommand = async (fromMobile, commandText) => {
 
     // 2. Controlled Routing Logic
     switch (commandText) {
+      case 'hi':
+      case 'hello':
+      case 'hey': {
+        const welcomeText = `Hello *${customer.name}*! 👋\nI am your Tally Assistant. How can I help you today?\n\nPlease choose an option by replying with the number (1, 2, or 3):\n\n1️⃣ *Ledger Balance* (Get current balance)\n2️⃣ *Outstanding Statement* (Fetch outstanding bills)\n3️⃣ *Last Invoice* (Show status of latest sales bill)`;
+        await whatsappService.sendTextMessage(fromMobile, welcomeText);
+        break;
+      }
+
+      case 'how are you':
+      case 'how r u':
+      case 'how r you': {
+        const friendlyText = `I'm doing great, thank you for asking *${customer.name}*! 😊 I am ready to fetch your Tally details. Please reply with 1, 2, or 3 to proceed.`;
+        await whatsappService.sendTextMessage(fromMobile, friendlyText);
+        break;
+      }
+
+      case '1':
       case 'balance': {
         const tallyResponse = await tallyService.getLedgerBalance(ledgerName);
         // Safely try to parse the XML result object
@@ -99,21 +100,23 @@ const handleTwoWayCommand = async (fromMobile, commandText) => {
         }
         await whatsappService.sendTextMessage(
           fromMobile,
-          `Dear ${customer.name},\nYour current ledger balance is: *${balanceString}*.\nThank you!`
+          `Dear *${customer.name}*,\n\nYour current ledger balance in Tally is: *${balanceString}*.\n\nThank you!`
         );
         break;
       }
 
+      case '2':
       case 'outstanding':
       case 'statement': {
         const tallyResponse = await tallyService.getOutstandingAmount(ledgerName);
         await whatsappService.sendTextMessage(
           fromMobile,
-          `Dear ${customer.name},\nWe are processing your outstanding statement. Please check back in a few minutes.`
+          `Dear *${customer.name}*,\n\nWe are processing your outstanding statement from Tally database. Please check back in a few minutes.`
         );
         break;
       }
 
+      case '3':
       case 'last invoice':
       case 'invoice': {
         const tallyResponse = await tallyService.getLastInvoices(ledgerName, 1);
@@ -138,7 +141,7 @@ const handleTwoWayCommand = async (fromMobile, commandText) => {
         if (invNo) {
           await whatsappService.sendTextMessage(
             fromMobile,
-            `Hello!\nYour last Invoice details:\nInvoice No: *${invNo}*\nDate: *${invDate}*\nTotal Amount: *₹${invAmt}*`
+            `Hello!\n\nYour last Tally Invoice details:\n- *Invoice No:* ${invNo}\n- *Date:* ${invDate}\n- *Total Amount:* ₹${invAmt}`
           );
         } else {
           await whatsappService.sendTextMessage(fromMobile, `Hi ${customer.name}, we couldn't find any invoice records in Tally.`);
@@ -148,7 +151,7 @@ const handleTwoWayCommand = async (fromMobile, commandText) => {
 
       default: {
         // Helpful options menu command callback
-        const helpText = `Hello ${customer.name}!\nAvailable Options:\n- *balance* : Get ledger balance\n- *invoice* : Get last invoice status\n- *statement* : Fetch ledger outstanding`;
+        const helpText = `Hello *${customer.name}*!\nWelcome to our Tally Assistant.\n\nPlease choose an option by replying with the number (1, 2, or 3):\n\n1️⃣ *Ledger Balance* (Get current balance)\n2️⃣ *Outstanding Statement* (Fetch outstanding bills)\n3️⃣ *Last Invoice* (Show status of latest sales bill)\n\nReply with *1*, *2*, or *3* to proceed!`;
         await whatsappService.sendTextMessage(fromMobile, helpText);
         break;
       }

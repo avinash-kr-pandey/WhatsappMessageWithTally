@@ -4,8 +4,6 @@ const logger = require('../utils/logger');
 const { WHATSAPP_QUEUE_NAME } = require('./whatsapp.queue');
 const whatsappService = require('../services/whatsapp.service');
 const invoiceService = require('../services/invoice.service');
-const { generateInvoicePDF } = require('../utils/pdf');
-const fs = require('fs');
 
 /**
  * BullMQ Worker processing invoice messaging requests
@@ -29,16 +27,12 @@ const whatsappWorker = new Worker(
       return;
     }
 
-    // Ensure voucherDate is a proper Date object for pdf generator
+    // Ensure voucherDate is a proper Date object
     currentInvoice.voucherDate = new Date(currentInvoice.voucherDate);
 
-    let pdfPath = null;
     try {
-      // 2. Generate the PDF invoice
-      pdfPath = await generateInvoicePDF(currentInvoice);
-
-      // 3. Send template + PDF invoice message via WhatsApp API
-      const apiResponse = await whatsappService.sendInvoiceMessage(currentInvoice.mobile, currentInvoice, pdfPath);
+      // 3. Send text invoice message via WhatsApp API
+      const apiResponse = await whatsappService.sendInvoiceMessage(currentInvoice.mobile, currentInvoice);
       const messageId = apiResponse.messages[0].id;
 
       // 4. Update status to reflect success
@@ -58,16 +52,6 @@ const whatsappWorker = new Worker(
       });
 
       throw error; // Re-throw error to trigger BullMQ retry backoff policies
-    } finally {
-      // 5. Clean up temporary files
-      if (pdfPath && fs.existsSync(pdfPath)) {
-        try {
-          fs.unlinkSync(pdfPath);
-          logger.debug(`Cleaned up temporary PDF file: ${pdfPath}`);
-        } catch (cleanupError) {
-          logger.error(`Failed to clean up temporary PDF path ${pdfPath}: ${cleanupError.message}`);
-        }
-      }
     }
   },
   {

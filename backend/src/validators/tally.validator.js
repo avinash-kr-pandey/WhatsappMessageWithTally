@@ -9,9 +9,9 @@ const tallyInvoiceSchema = joi.object({
   }).required(),
   invoice: joi.object({
     voucherNumber: joi.string().required(),
-    date: joi.string().isoDate().required(),
+    date: joi.string().required(),
     partyName: joi.string().required(),
-    mobile: joi.string().pattern(/^[0-9+ ]{10,15}$/).required(),
+    mobile: joi.string().required(),
     subtotal: joi.number().required(),
     tax: joi.number().default(0),
     total: joi.number().required()

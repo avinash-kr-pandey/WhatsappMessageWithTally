@@ -19,7 +19,7 @@ const startServer = async () => {
     const shutdown = async () => {
       logger.info('Shutting down server gracefully...');
       server.close(async () => {
-        const { whatsappWorker } = require('./queue/whatsapp.worker');
+        const whatsappWorker = require('./queue/whatsapp.worker');
         if (whatsappWorker) {
           await whatsappWorker.close();
           logger.info('BullMQ workers shutdown complete.');

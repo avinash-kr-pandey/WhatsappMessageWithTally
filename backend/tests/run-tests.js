@@ -43,22 +43,16 @@ const runTests = async () => {
     // 2. WhatsApp Webhook message parsing schema test
     console.log('Test 3: WhatsApp Webhook validation - Message Status Hook');
     const mockWebhookStatus = {
-      object: 'whatsapp_business_account',
-      entry: [{
-        id: 'WHATSAPP_BUSINESS_ACCOUNT_ID',
-        changes: [{
-          value: {
-            messaging_product: 'whatsapp',
-            statuses: [{
-              id: 'msg-id-12345',
-              status: 'delivered',
-              timestamp: '1724457600',
-              recipient_id: '919876543210'
-            }]
-          },
-          field: 'messages'
-        }]
-      }]
+      id: 'true_16605413859@c.us_1EB906471DE2AEF67303E0004B4316BB',
+      channelId: 1401,
+      receiverNumber: '919876543210',
+      receiverName: 'You',
+      senderNumber: '919999999999',
+      senderName: 'Customer Name',
+      boundType: 'in',
+      itemType: 'text',
+      value: 'Hi, I received the invoice. Thank you!',
+      time: 1618805688000
     };
     const { error: hookErr } = whatsappWebhookSchema.validate(mockWebhookStatus);
     assert.strictEqual(hookErr, undefined, 'WhatsApp webhook state should pass validation');
@@ -67,8 +61,8 @@ const runTests = async () => {
     // 3. Normalized phone number helper test
     console.log('Test 4: WhatsApp phone number normalizer utility test');
     const whatsappService = require('../src/services/whatsapp.service');
-    assert.strictEqual(whatsappService.normalizePhoneNumber('09876543210'), '919876543210', 'Should prepend 91 for standard 10 digit Indian number');
-    assert.strictEqual(whatsappService.normalizePhoneNumber('+91 98765-43210'), '919876543210', 'Should strip extra characters');
+    assert.strictEqual(whatsappService.normalizePhoneNumber('09876543210'), '+919876543210', 'Should prepend 91 for standard 10 digit Indian number and add +');
+    assert.strictEqual(whatsappService.normalizePhoneNumber('+91 98765-43210'), '+919876543210', 'Should strip extra characters and keep +');
     console.log('✔ Test Passed!');
 
     console.log('----------------------------------------------------');

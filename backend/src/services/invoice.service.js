@@ -46,11 +46,27 @@ const createInvoice = async (invoiceData, idempotencyKey) => {
   try {
     // Cache for 7 days
     await redisClient.setex(`idempotency:${idempotencyKey}`, 604800, JSON.stringify(invoice));
+    await redisClient.setex(`vouchermap:${invoice.voucherNumber}`, 604800, idempotencyKey);
   } catch (error) {
     logger.error(`Error saving invoice to Redis: ${error.message}`);
   }
 
   return invoice;
+};
+
+/**
+ * Retrieve invoice status using voucher number mapping
+ */
+const getInvoiceByVoucherNumber = async (voucherNumber) => {
+  try {
+    const key = await redisClient.get(`vouchermap:${voucherNumber}`);
+    if (key) {
+      return await getInvoiceByIdempotencyKey(key);
+    }
+  } catch (error) {
+    logger.error(`Error fetching voucher mapping from Redis: ${error.message}`);
+  }
+  return null;
 };
 
 /**
@@ -75,5 +91,6 @@ module.exports = {
   generateIdempotencyKey,
   getInvoiceByIdempotencyKey,
   createInvoice,
+  getInvoiceByVoucherNumber,
   updateInvoiceStatus
 };

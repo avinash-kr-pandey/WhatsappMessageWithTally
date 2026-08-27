@@ -254,6 +254,75 @@ class TallyService {
       return null;
     }
   }
+
+  /**
+   * Query all Sales Vouchers/Invoices from Tally dynamically resolving party mobile numbers
+   */
+  async getRecentSalesInvoices() {
+    logger.info('Fetching recent sales invoices from TallyPrime');
+    const xml = `
+      <ENVELOPE>
+        <HEADER>
+          <VERSION>1</VERSION>
+          <TALLYREQUEST>Export</TALLYREQUEST>
+          <TYPE>Collection</TYPE>
+          <ID>RecentSalesVouchers</ID>
+        </HEADER>
+        <BODY>
+          <DESC>
+            <STATICVARIABLES>
+              <SVEXPORTFORMAT>$$SysName:XML</SVEXPORTFORMAT>
+            </STATICVARIABLES>
+            <TDL>
+              <TDLMESSAGE>
+                <COLLECTION NAME="RecentSalesVouchers">
+                  <TYPE>Voucher</TYPE>
+                  <CHILDROF>$$VchTypeSales</CHILDROF>
+                  <BELONGSTO>Yes</BELONGSTO>
+                  <METHOD NAME="PartyMobile">$LEDGERMOBILE:Ledger:$PartyLedgerName</METHOD>
+                  <METHOD NAME="PartyPhone">$LEDGERPHONE:Ledger:$PartyLedgerName</METHOD>
+                  <FETCH>VoucherNumber, Date, PartyLedgerName, Amount, PartyMobile, PartyPhone</FETCH>
+                </COLLECTION>
+              </TDLMESSAGE>
+            </TDL>
+          </DESC>
+        </BODY>
+      </ENVELOPE>
+    `;
+
+    try {
+      const rawResponse = await this.sendXmlRequest(xml);
+      const parsed = await parseXml(rawResponse);
+      
+      let vouchers = [];
+      if (parsed && parsed.ENVELOPE && parsed.ENVELOPE.BODY && parsed.ENVELOPE.BODY.DATA && parsed.ENVELOPE.BODY.DATA.COLLECTION) {
+        const collection = parsed.ENVELOPE.BODY.DATA.COLLECTION;
+        if (collection.VOUCHER) {
+          const rawVouchers = Array.isArray(collection.VOUCHER) ? collection.VOUCHER : [collection.VOUCHER];
+          vouchers = rawVouchers.map(v => {
+            const partyName = v.PARTYLEDGERNAME || '';
+            const voucherNumber = v.VOUCHERNUMBER || '';
+            const date = v.DATE || '';
+            const amount = parseFloat(v.AMOUNT || '0');
+            const partyMobile = typeof v.PARTYMOBILE === 'string' ? v.PARTYMOBILE : '';
+            const partyPhone = typeof v.PARTYPHONE === 'string' ? v.PARTYPHONE : '';
+
+            return {
+              voucherNumber,
+              date,
+              partyName,
+              amount: Math.abs(amount),
+              mobile: partyMobile || partyPhone || ''
+            };
+          });
+        }
+      }
+      return vouchers;
+    } catch (error) {
+      logger.error(`Error querying recent vouchers from Tally: ${error.message}`);
+      return [];
+    }
+  }
 }
 
 module.exports = new TallyService();

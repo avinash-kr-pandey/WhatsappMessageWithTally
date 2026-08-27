@@ -1,0 +1,99 @@
+<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>All Masters</REPORTNAME>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        <!-- Ledger Master: ABC Enterprise -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER NAME="ABC Enterprise" ACTION="Create">
+            <NAME>ABC Enterprise</NAME>
+            <PARENT>Sundry Debtors</PARENT>
+            <OPENINGBALANCE>0</OPENINGBALANCE>
+            <LEDGERMOBILE>918873847394</LEDGERMOBILE>
+            <LEDGERPHONE>918873847394</LEDGERPHONE>
+          </LEDGER>
+        </TALLYMESSAGE>
+        <!-- Ledger Master: XYZ Solutions -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <LEDGER NAME="XYZ Solutions" ACTION="Create">
+            <NAME>XYZ Solutions</NAME>
+            <PARENT>Sundry Debtors</PARENT>
+            <OPENINGBALANCE>0</OPENINGBALANCE>
+            <LEDGERMOBILE>919876543210</LEDGERMOBILE>
+            <LEDGERPHONE>919876543210</LEDGERPHONE>
+          </LEDGER>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>Vouchers</REPORTNAME>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        <!-- Sales Voucher: Sales-001 -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER VCHTYPE="Sales" ACTION="Create">
+            <DATE>20260824</DATE>
+            <VOUCHERNUMBER>Sales-001</VOUCHERNUMBER>
+            <PARTYLEDGERNAME>ABC Enterprise</PARTYLEDGERNAME>
+            <EFFECTIVEDATE>20260824</EFFECTIVEDATE>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>ABC Enterprise</LEDGERNAME>
+              <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+              <AMOUNT>-5900.00</AMOUNT>
+            </LEDGERENTRIES.LIST>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>Sales Account</LEDGERNAME>
+              <ISPARTYLEDGER>No</ISPARTYLEDGER>
+              <AMOUNT>5000.00</AMOUNT>
+            </LEDGERENTRIES.LIST>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>CGST</LEDGERNAME>
+              <ISPARTYLEDGER>No</ISPARTYLEDGER>
+              <AMOUNT>450.00</AMOUNT>
+            </LEDGERENTRIES.LIST>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>SGST</LEDGERNAME>
+              <ISPARTYLEDGER>No</ISPARTYLEDGER>
+              <AMOUNT>450.00</AMOUNT>
+            </LEDGERENTRIES.LIST>
+          </VOUCHER>
+        </TALLYMESSAGE>
+        <!-- Sales Voucher: Sales-002 -->
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER VCHTYPE="Sales" ACTION="Create">
+            <DATE>20260825</DATE>
+            <VOUCHERNUMBER>Sales-002</VOUCHERNUMBER>
+            <PARTYLEDGERNAME>XYZ Solutions</PARTYLEDGERNAME>
+            <EFFECTIVEDATE>20260825</EFFECTIVEDATE>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>XYZ Solutions</LEDGERNAME>
+              <ISPARTYLEDGER>Yes</ISPARTYLEDGER>
+              <AMOUNT>-11800.00</AMOUNT>
+            </LEDGERENTRIES.LIST>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>Sales Account</LEDGERNAME>
+              <ISPARTYLEDGER>No</ISPARTYLEDGER>
+              <AMOUNT>10000.00</AMOUNT>
+            </LEDGERENTRIES.LIST>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>CGST</LEDGERNAME>
+              <ISPARTYLEDGER>No</ISPARTYLEDGER>
+              <AMOUNT>900.00</AMOUNT>
+            </LEDGERENTRIES.LIST>
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>SGST</LEDGERNAME>
+              <ISPARTYLEDGER>No</ISPARTYLEDGER>
+              <AMOUNT>900.00</AMOUNT>
+            </LEDGERENTRIES.LIST>
+          </VOUCHER>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>

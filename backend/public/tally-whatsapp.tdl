@@ -1,0 +1,121 @@
+[System: Formula]
+;; ============================================================================
+;; TALLYPRIME 7.0+ TO WHATSAPP INTEGRATION TDL
+;; Triggered upon Sales Invoice save/creation.
+;; Formats dynamic details to JSON and executes asynchronous HTTP POST request.
+;; ============================================================================
+
+[System: Variable]
+    ;; Backend Integration Variables (Configure using F11 -> Add-on Features or edit below)
+    IntegrationURL    : "http://localhost:5000/api/tally/invoice"
+    IntegrationKey    : "change_me"
+
+[System: Formula]
+    ;; Utility to clean double quotes in values to avoid JSON breakage
+    JSONCleanString : if $$IsEmpty:$$Value then "" else $$String:$$Value
+
+;; ----------------------------------------------------------------------------
+;; TRIGGER ON SALES VOUCHER FORM EVENTS
+;; Register Action/Event on Form Save Success
+;; ----------------------------------------------------------------------------
+[#Form: Sales Color]
+    On: Form Accept: Yes: Call: SendInvoiceToBackend
+
+;; ----------------------------------------------------------------------------
+;; FUNCTION TO GATHER DATA AND EXECUTE HTTP POST REST CALL
+;; ----------------------------------------------------------------------------
+[Function: SendInvoiceToBackend]
+    ;; Local variables to store JSON payload fragments
+    Variable: JsonPayload : String
+    Variable: CompanyName : String
+    Variable: CompanyGSTIN : String
+    Variable: CompanyAddress : String
+    Variable: PartyName : String
+    Variable: PartyMobile : String
+    Variable: InvNumber : String
+    Variable: InvDate : String
+    Variable: Subtotal : Number
+    Variable: InvTax : Number
+    Variable: InvTotal : Number
+    Variable: TempItemJson : String
+    Variable: ItemIndex : Number
+
+    00 : SET : CompanyName : $$JSONCleanString:$$SelectedCompany
+    10 : SET : CompanyGSTIN : $$JSONCleanString:($$GSTINNo:$$SelectedCompany)
+    20 : SET : CompanyAddress : $$JSONCleanString:($$Location:$$SelectedCompany)
+    
+    30 : SET : PartyName : $$JSONCleanString:$PartyLedgerName
+    40 : SET : PartyMobile : $$JSONCleanString:($LEDGERMOBILE:Ledger:##PartyName)
+    
+    ;; Fallback validation to use Ledger Phone if Mobile field is empty
+    50 : IF : $$IsEmpty:##PartyMobile
+    60 :   SET : PartyMobile : $$JSONCleanString:($LEDGERPHONE:Ledger:##PartyName)
+    70 : ENDIF
+    
+    ;; Set default test mobile if empty
+    80 : IF : $$IsEmpty:##PartyMobile
+    90 :   SET : PartyMobile : "919876543210"
+    100: ENDIF
+
+    110: SET : InvNumber : $$JSONCleanString:$VoucherNumber
+    120: SET : InvDate : $$String:$Date
+    130: SET : Subtotal : $BasicNetTotal
+    140: SET : InvTax : ($TotalGSTAmount)
+    150: SET : InvTotal : $Amount
+
+    ;; Start concatenating custom JSON structure string directly
+    160: SET : JsonPayload : "{" + + ~
+         "\"event\":\"SALES_INVOICE_CREATED\"," + ~
+         "\"company\":{" + ~
+           "\"name\":\"" + ##CompanyName + "\"," + ~
+           "\"gstin\":\"" + ##CompanyGSTIN + "\"," + ~
+           "\"address\":\"" + ##CompanyAddress + "\"" + ~
+         "}," + ~
+         "\"invoice\":{" + ~
+           "\"voucherNumber\":\"" + ##InvNumber + "\"," + ~
+           "\"date\":\"" + ##InvDate + "\"," + ~
+           "\"partyName\":\"" + ##PartyName + "\"," + ~
+           "\"mobile\":\"" + ##PartyMobile + "\"," + ~
+           "\"subtotal\":" + $$String:##Subtotal + "," + ~
+           "\"tax\":" + $$String:##InvTax + "," + ~
+           "\"total\":" + $$String:##InvTotal + ~
+         "}," + ~
+         "\"items\":["
+
+    ;; Iterate Voucher inventory details
+    170: SET : ItemIndex : 1
+    180: WALK COLLECTION: InventoryEntries
+    190:   IF : NOT $$IsEmpty:$StockItemName
+    200:     SET : TempItemJson : "{" + ~
+               "\"name\":\"" + $$JSONCleanString:$StockItemName + "\"," + ~
+               "\"quantity\":" + $$String:$BilledQty + "," + ~
+               "\"rate\":" + $$String:$Rate + "," + ~
+               "\"discount\":" + $$String:$Discount + "," + ~
+               "\"gst\":" + $$String:$GSTRate + "," + ~
+               "\"amount\":" + $$String:$Amount + ~
+             "}"
+             
+             ;; Append comma delimiter for multi-array items
+    210:     IF : ##ItemIndex > 1
+    220:       SET : JsonPayload : ##JsonPayload + ","
+    230:     ENDIF
+    
+    240:     SET : JsonPayload : ##JsonPayload + ##TempItemJson
+    250:     SET : ItemIndex : ##ItemIndex + 1
+    260:   ENDIF
+    270: ENDWALK
+
+    ;; Close JSON string payload arrays
+    280: SET : JsonPayload : ##JsonPayload + "]}"
+
+    ;; Fire non-blocking HTTP REST request call using Tally HTTP Post API Action
+    290: LOG : "Sending invoice event payload to background web service API: " + ##JsonPayload
+    300: HTTP POST : ##IntegrationURL : ##JsonPayload : "x-tally-api-key:" + ##IntegrationKey : "Content-Type:application/json"
+    
+    ;; Error handling / Logging result
+    310: IF : $$HTTPStatus = 200 OR $$HTTPStatus = 201
+    320:   LOG : "WhatsApp integration payload enqueued successfully"
+    330: ELSE
+    340:   LOG : "Failed posting invoice to integration webhook. HTTP Status Code: " + $$String:$$HTTPStatus
+    350: ENDIF
+    360: RETURN

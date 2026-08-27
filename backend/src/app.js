@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 
 const tallyRoutes = require('./routes/tally.routes');
 const whatsappRoutes = require('./routes/whatsapp.routes');
@@ -12,7 +13,16 @@ const { successResponse } = require('./utils/response');
 const app = express();
 
 // 1. Security Middlewares
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+    },
+  },
+}));
 app.use(cors());
 
 // Rate limiting (max 100 requests per window limit for APIs)
@@ -26,6 +36,9 @@ app.use('/api/', limiter);
 // 2. Body Parser (Accept standard JSON payloads)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve Static UI Assets
+app.use(express.static(path.join(__dirname, '../public')));
 
 // 3. API Routing
 app.use('/api/tally', tallyRoutes);

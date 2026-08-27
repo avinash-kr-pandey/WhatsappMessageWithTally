@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TallyPrime + WhatsApp Gateway Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --panel-bg: rgba(17, 25, 40, 0.75);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --glow-green: rgba(16, 185, 129, 0.15);
+      --glow-blue: rgba(59, 130, 246, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .brand h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      background: linear-gradient(to right, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.25rem;
+    }
+
+    .brand p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Status Grid */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .status-card {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .status-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .status-info h3 {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .status-val {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .ind-online {
+      background-color: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    .ind-offline {
+      background-color: var(--accent-red);
+      box-shadow: 0 0 8px var(--accent-red);
+    }
+
+    .ind-warning {
+      background-color: var(--accent-blue);
+      box-shadow: 0 0 8px var(--accent-blue);
+    }
+
+    /* Primary Grid Layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Panel styling */
+    .panel {
+      background: var(--panel-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+    }
+
+    .panel-header h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Tables */
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: rgba(255, 255, 255, 0.02);
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: rgba(255, 255, 255, 0.01);
+    }
+
+    /* Inputs & Buttons */
+    .input-field {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 0.6rem 0.8rem;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px var(--glow-blue);
+    }
+
+    .phone-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      max-width: 180px;
+    }
+
+    .btn {
+      cursor: pointer;
+      font-weight: 500;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.85rem;
+      transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background-color: var(--accent-blue);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background-color: #2563eb;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-success {
+      background-color: var(--accent-green);
+      color: #fff;
+      padding: 0.5rem 0.8rem;
+    }
+
+    .btn-success:hover {
+      background-color: #059669;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-secondary {
+      background-color: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Manual Trigger Form */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    /* Downloads & Setup info */
+    .guide-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .guide-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .guide-card p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .guide-card code {
+      font-family: monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      color: #60a5fa;
+      font-size: 0.8rem;
+    }
+
+    /* Alerts */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast-success {
+      background-color: var(--accent-green);
+    }
+
+    .toast-error {
+      background-color: var(--accent-red);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .loader {
+      border: 3px solid rgba(255,255,255,0.05);
+      border-top: 3px solid var(--accent-blue);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <h1>TallyPrime + WhatsApp Gateway</h1>
+        <p>Real-time Sales Invoices WhatsApp Delivery Agent & Dashboard</p>
+      </div>
+      <div>
+        <button class="btn btn-secondary" onclick="fetchHealth()">Refresh Status</button>
+      </div>
+    </header>
+
+    <!-- Health Grid -->
+    <div class="status-grid">
+      <div class="status-card">
+        <div class="status-info">
+          <h3>TallyPrime Server</h3>
+          <div class="status-val" id="tally-status">
+            <span class="indicator ind-offline"></span>
+            Checking...
+          </div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-info">
+          <h3>Redis Worker Queue</h3>
+          <div class="status-val" id="redis-status">
+            <span class="indicator ind-offline"></span>
+            Checking...
+          </div>
+        </div>
+      </div>
+      <div class="status-card">
+        <div class="status-info">
+          <h3>WhatsApp Channel</h3>
+          <div class="status-val" id="wa-status">
+            <span class="indicator ind-offline"></span>
+            Checking...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <div class="dashboard-grid">
+      <!-- Left side: Invoices from Tally -->
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Sales Invoices inside Tally</h2>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary" onclick="pushSampleToTally()">
+              Push Sample Vouchers
+            </button>
+            <button class="btn btn-primary" onclick="fetchTallyInvoices()">
+              Sync from Tally
+            </button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table id="invoices-table">
+            <thead>
+              <tr>
+                <th>Voucher No</th>
+                <th>Date</th>
+                <th>Party/Customer Name</th>
+                <th>Amount</th>
+                <th>WhatsApp Number</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="invoices-tbody">
+              <tr>
+                <td colspan="7">
+                  <div class="empty-state">
+                    <p>Click "Sync from Tally" to query Sales Vouchers directly from your active Tally Prime database.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right side: Manual messaging form & Guides -->
+      <div style="display: flex; flex-direction: column; gap: 2rem;">
+        <!-- Manual Form -->
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Manual WhatsApp Send</h2>
+          </div>
+
+          <form id="manual-send-form" onsubmit="handleManualSend(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-group">
+              <label for="m-company">Company Name</label>
+              <input type="text" id="m-company" class="input-field" value="Demo Company" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="m-voucher">Invoice Number</label>
+                <input type="text" id="m-voucher" class="input-field" placeholder="INV-001" required>
+              </div>
+              <div class="form-group">
+                <label for="m-date">Invoice Date</label>
+                <input type="date" id="m-date" class="input-field" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="m-party">Party/Customer Name</label>
+              <input type="text" id="m-party" class="input-field" placeholder="ABC Ledger Ltd" required>
+            </div>
+
+            <div class="form-group">
+              <label for="m-mobile">WhatsApp Mobile Number</label>
+              <input type="text" id="m-mobile" class="input-field" placeholder="918873847394" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="m-total">Total Invoice Amount (₹)</label>
+                <input type="number" id="m-total" class="input-field" value="1000" min="0" step="0.01" required>
+              </div>
+              <div class="form-group">
+                <label for="m-tax">Tax/GST Amount (₹)</label>
+                <input type="number" id="m-tax" class="input-field" value="180" min="0" step="0.01" required>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; width: 100%;">
+              Send WhatsApp Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // Initialize Manual Send Form Date
+    document.getElementById('m-date').valueAsDate = new Date();
+
+    // Show Toast Alert
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.className = `toast toast-${type} show`;
+      setTimeout(() => {
+        toast.className = 'toast';
+      }, 4000);
+    }
+
+    // Push Sample Data XML to Tally Prime
+    async function pushSampleToTally() {
+      showToast('Pushing sample data into Tally...', 'warning');
+      try {
+        const res = await fetch('/api/tally/import-sample', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Sample data successfully imported to Tally!', 'success');
+          setTimeout(fetchTallyInvoices, 1000);
+        } else {
+          showToast(`Push failed: ${data.message || 'Check if Tally company is open'}`, 'error');
+        }
+      } catch (err) {
+        console.error('Error pushing data:', err);
+        showToast('Connection failed.', 'error');
+      }
+    }
+
+    // System Health Status Check
+    async function fetchHealth() {
+      try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        
+        if (data.success && data.data) {
+          const sys = data.data;
+          
+          updateIndicator('tally-status', sys.tally);
+          updateIndicator('redis-status', sys.redis);
+          
+          const waStatus = document.getElementById('wa-status');
+          if (sys.whatsapp === 'configured') {
+            waStatus.innerHTML = `<span class="indicator ind-online"></span> Configured (Integrated)`;
+          } else {
+            waStatus.innerHTML = `<span class="indicator ind-warning"></span> Mock Mode`;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching system health:', err);
+        updateIndicator('tally-status', 'offline');
+        updateIndicator('redis-status', 'offline');
+        document.getElementById('wa-status').innerHTML = `<span class="indicator ind-offline"></span> Server Offline`;
+      }
+    }
+
+    function updateIndicator(elementId, state) {
+      const element = document.getElementById(elementId);
+      const isOnline = typeof state === 'string' ? state.startsWith('connected') : false;
+      
+      if (isOnline) {
+        element.innerHTML = `<span class="indicator ind-online"></span> Active`;
+      } else {
+        element.innerHTML = `<span class="indicator ind-offline"></span> Offline / Standby`;
+      }
+    }
+
+    // Storage for synchronized Tally Vouchers
+    let localVouchers = [];
+
+    // Query Sales Vouchers from Tally Prime
+    async function fetchTallyInvoices() {
+      const tbody = document.getElementById('invoices-tbody');
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align:center; padding: 3rem 0;">
+            <div class="loader"></div>
+            <p style="margin-top: 1rem; color: var(--text-muted);">Retrieving database vouchers from TallyPrime...</p>
+          </td>
+        </tr>
+      `;
+
+      try {
+        const res = await fetch('/api/tally/vouchers');
+        const data = await res.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          localVouchers = data.data;
+          renderVouchers(localVouchers);
+          showToast(`Synced ${localVouchers.length} vouchers from Tally!`);
+        } else {
+          localVouchers = [];
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <p>No Sales Vouchers found in Tally, or Tally Server is Offline (Port 9000). Verify TallyPrime is running with a company open.</p>
+                </div>
+              </td>
+            </tr>
+          `;
+          showToast('No invoices found or Tally is offline.', 'error');
+        }
+      } catch (err) {
+        console.error('Error syncing vouchers:', err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6">
+              <div class="empty-state">
+                <p>Failed communicating with server. Check backend console logs.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        showToast('Sync failed. Is the server running?', 'error');
+      }
+      fetchHealth();
+    }
+
+    // Render Vouchers inside Table
+    function renderVouchers(vouchers) {
+      const tbody = document.getElementById('invoices-tbody');
+      tbody.innerHTML = '';
+      
+      vouchers.forEach((v, index) => {
+        const dateStr = v.date ? v.date.substring(0, 4) + '-' + v.date.substring(4, 6) + '-' + v.date.substring(6, 8) : 'N/A';
+        const formattedAmount = Number(v.amount).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+        
+        const status = v.whatsappStatus || 'UNSENT';
+        let statusBadge = '';
+        if (status === 'SENT' || status === 'PROCESSED') {
+          statusBadge = '<span style="color:var(--accent-green); font-weight:600;">✔ SENT</span>';
+        } else if (status === 'QUEUED' || status === 'PENDING') {
+          statusBadge = '<span style="color:var(--accent-blue); font-weight:600;">⏳ QUEUED</span>';
+        } else if (status === 'FAILED') {
+          statusBadge = '<span style="color:var(--accent-red); font-weight:600;">❌ FAILED</span>';
+        } else {
+          statusBadge = '<span style="color:var(--text-muted);">NOT SENT</span>';
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${v.voucherNumber}</b></td>
+          <td>${dateStr}</td>
+          <td>${v.partyName}</td>
+          <td>${formattedAmount}</td>
+          <td>
+            <div class="phone-input-wrap">
+              <input type="text" id="phone-${index}" class="input-field" value="${v.mobile || '91'}" placeholder="Enter mobile" style="padding: 0.4rem 0.6rem;">
+            </div>
+          </td>
+          <td>${statusBadge}</td>
+          <td>
+            <button class="btn btn-success" onclick="sendWhatsAppFromRow(${index})">
+              Send WA
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Trigger WhatsApp Message from Table Row Action
+    async function sendWhatsAppFromRow(index) {
+      const voucher = localVouchers[index];
+      const phoneInput = document.getElementById(`phone-${index}`);
+      const overriddenPhone = phoneInput.value.trim();
+
+      if (!overriddenPhone || overriddenPhone.length < 10) {
+        showToast('Please enter a valid WhatsApp mobile number', 'error');
+        return;
+      }
+
+      const dateRaw = voucher.date; // YYYYMMDD
+      const dateFormatted = dateRaw ? dateRaw.substring(0, 4) + '-' + dateRaw.substring(4, 6) + '-' + dateRaw.substring(6, 8) : new Date().toISOString().split('T')[0];
+
+      // Formulate complete structured sales invoice payload
+      const payload = {
+        event: 'SALES_INVOICE_CREATED',
+        company: {
+          name: 'Demo Company',
+          gstin: '27AAAAA1111A1Z1',
+          address: 'Mumbai, Maharashtra'
+        },
+        invoice: {
+          voucherNumber: voucher.voucherNumber,
+          date: dateFormatted,
+          partyName: voucher.partyName,
+          mobile: overriddenPhone,
+          subtotal: voucher.amount - (voucher.amount * 0.18), // mock calculate back subtotal
+          tax: voucher.amount * 0.18, // mock GST
+          total: voucher.amount
+        },
+        items: [
+          {
+            name: 'General Sales Goods/Services',
+            quantity: 1,
+            rate: voucher.amount - (voucher.amount * 0.18),
+            discount: 0,
+            gst: 18,
+            amount: voucher.amount
+          }
+        ]
+      };
+
+      try {
+        const res = await fetch('/api/tally/send-manual', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          showToast(`WhatsApp message queued for ${voucher.voucherNumber}!`);
+          setTimeout(fetchTallyInvoices, 1000);
+        } else {
+          showToast(`Failed: ${data.message || 'Error occurred'}`, 'error');
+        }
+      } catch (err) {
+        console.error('Error manual sending:', err);
+        showToast('Failed to queue message.', 'error');
+      }
+    }
+
+    // Handle Manual Sending Form Submission
+    async function handleManualSend(e) {
+      e.preventDefault();
+      
+      const company = document.getElementById('m-company').value.trim();
+      const voucherNumber = document.getElementById('m-voucher').value.trim();
+      const date = document.getElementById('m-date').value;
+      const partyName = document.getElementById('m-party').value.trim();
+      const mobile = document.getElementById('m-mobile').value.trim();
+      const total = parseFloat(document.getElementById('m-total').value);
+      const tax = parseFloat(document.getElementById('m-tax').value);
+
+      const payload = {
+        event: 'SALES_INVOICE_CREATED',
+        company: {
+          name: company,
+          gstin: '27AAAAA1111A1Z1',
+          address: 'Mumbai, Maharashtra'
+        },
+        invoice: {
+          voucherNumber,
+          date,
+          partyName,
+          mobile,
+          subtotal: total - tax,
+          tax,
+          total
+        },
+        items: [
+          {
+            name: 'Custom Product / Service Sales Item',
+            quantity: 1,
+            rate: total - tax,
+            discount: 0,
+            gst: Math.round((tax / (total - tax)) * 100),
+            amount: total
+          }
+        ]
+      };
+
+      try {
+        const res = await fetch('/api/tally/send-manual', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          showToast(`Success! Manual WhatsApp job queued.`);
+          document.getElementById('manual-send-form').reset();
+          document.getElementById('m-date').valueAsDate = new Date();
+        } else {
+          showToast(`Failed: ${data.message || 'Error occurred'}`, 'error');
+        }
+      } catch (err) {
+        console.error('Error manually trigger:', err);
+        showToast('Connection error.', 'error');
+      }
+    }
+
+    // Initial Status Check on page boot
+    fetchHealth();
+    // Refresh status check every 30 seconds
+    setInterval(fetchHealth, 30000);
+  </script>
+</body>
+</html>
