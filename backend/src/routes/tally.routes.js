@@ -9,6 +9,8 @@ const { validateTallyApiKey } = require('../middleware/auth.middleware');
 const { validateBody } = require('../middleware/validation.middleware');
 const { tallyInvoiceSchema } = require('../validators/tally.validator');
 
+const syncController = require('../controllers/sync.controller');
+
 const router = express.Router();
 
 /**
@@ -39,4 +41,16 @@ router.post('/import-sample', handleImportSampleData);
  */
 router.post('/send-manual', handleManualWhatsAppSend);
 
+// Sync control routes
+router.post('/sync/start', syncController.startSync);
+router.post('/sync/pause', syncController.pauseSync);
+router.post('/sync/resume', syncController.resumeSync);
+router.post('/sync/stop', syncController.stopSync);
+router.get('/sync/status', syncController.getSyncStatus);
+router.get('/sync/transactions', syncController.getTransactions);
+router.get('/sync/errors', syncController.getSyncErrors);
+router.post('/sync/retry-failed', syncController.retryFailedSync);
+router.post('/sync/config', syncController.updateConfig);
+
 module.exports = router;
+

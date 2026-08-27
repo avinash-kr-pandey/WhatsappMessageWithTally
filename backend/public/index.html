@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TallyPrime + WhatsApp Gateway Dashboard</title>
+  <title>TallyPrime Sync & WhatsApp Gateway</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #090d16;
-      --panel-bg: rgba(17, 25, 40, 0.75);
+      --bg-dark: #07090e;
+      --bg-card: rgba(15, 22, 38, 0.7);
+      --bg-sidebar: #0b0f19;
       --border-color: rgba(255, 255, 255, 0.08);
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
@@ -18,6 +19,7 @@
       --accent-red: #ef4444;
       --accent-blue: #3b82f6;
       --accent-purple: #8b5cf6;
+      --accent-yellow: #f59e0b;
       --glow-green: rgba(16, 185, 129, 0.15);
       --glow-blue: rgba(59, 130, 246, 0.15);
     }
@@ -32,55 +34,140 @@
     body {
       background-color: var(--bg-dark);
       background-image: 
-        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 50%);
       color: var(--text-main);
       min-height: 100vh;
-      padding: 2rem;
       display: flex;
-      flex-direction: column;
-      gap: 2rem;
     }
 
-    /* Container */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
+    /* App Layout */
+    .app-container {
       display: flex;
-      flex-direction: column;
-      gap: 2rem;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
     }
 
-    /* Header */
-    header {
+    /* Sidebar Styling */
+    .sidebar {
+      width: 260px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--panel-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 1.5rem 2rem;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      flex-direction: column;
+      padding: 2rem 1.5rem;
+      gap: 2.5rem;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
     }
 
     .brand h1 {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       font-weight: 700;
       letter-spacing: -0.025em;
       background: linear-gradient(to right, #60a5fa, #a78bfa);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 0.25rem;
     }
 
     .brand p {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
     }
 
-    /* Status Grid */
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      list-style: none;
+      flex-grow: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      color: var(--text-muted);
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .nav-item.active {
+      color: #fff;
+      background: rgba(59, 130, 246, 0.12);
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    .sidebar-footer {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+      padding-top: 1rem;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex-grow: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* Cards & Panels */
+    .panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .panel-header h2 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Grid Layouts */
     .status-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -88,39 +175,50 @@
     }
 
     .status-card {
-      background: var(--panel-bg);
-      backdrop-filter: blur(12px);
+      background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: 16px;
       padding: 1.25rem 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.2);
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
     .status-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.25);
+      box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.15);
     }
 
     .status-info h3 {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.4rem;
     }
 
     .status-val {
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       font-weight: 600;
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Indicators */
     .indicator {
       width: 10px;
       height: 10px;
@@ -139,53 +237,11 @@
     }
 
     .ind-warning {
-      background-color: var(--accent-blue);
-      box-shadow: 0 0 8px var(--accent-blue);
+      background-color: var(--accent-yellow);
+      box-shadow: 0 0 8px var(--accent-yellow);
     }
 
-    /* Primary Grid Layout */
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 2rem;
-    }
-
-    @media (max-width: 900px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Panel styling */
-    .panel {
-      background: var(--panel-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: 2rem;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 1rem;
-    }
-
-    .panel-header h2 {
-      font-size: 1.2rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    /* Tables */
+    /* Table Component */
     .table-container {
       overflow-x: auto;
       border-radius: 12px;
@@ -200,7 +256,7 @@
     }
 
     th, td {
-      padding: 1rem;
+      padding: 0.9rem 1.1rem;
       border-bottom: 1px solid var(--border-color);
     }
 
@@ -218,32 +274,25 @@
     }
 
     tr:hover td {
-      background-color: rgba(255, 255, 255, 0.01);
+      background-color: rgba(255, 255, 255, 0.015);
     }
 
-    /* Inputs & Buttons */
+    /* Inputs, Buttons, & Forms */
     .input-field {
       width: 100%;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       color: var(--text-main);
-      padding: 0.6rem 0.8rem;
+      padding: 0.65rem 0.85rem;
       font-size: 0.85rem;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.2s;
     }
 
     .input-field:focus {
       border-color: var(--accent-blue);
       box-shadow: 0 0 0 2px var(--glow-blue);
-    }
-
-    .phone-input-wrap {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      max-width: 180px;
     }
 
     .btn {
@@ -256,9 +305,9 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      padding: 0.6rem 1.2rem;
+      padding: 0.65rem 1.25rem;
       font-size: 0.85rem;
-      transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+      transition: all 0.2s;
     }
 
     .btn:active {
@@ -272,40 +321,56 @@
 
     .btn-primary:hover {
       background-color: #2563eb;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
     }
 
     .btn-success {
       background-color: var(--accent-green);
       color: #fff;
-      padding: 0.5rem 0.8rem;
     }
 
     .btn-success:hover {
       background-color: #059669;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-warning {
+      background-color: var(--accent-yellow);
+      color: #fff;
+    }
+
+    .btn-warning:hover {
+      background-color: #d97706;
+    }
+
+    .btn-danger {
+      background-color: var(--accent-red);
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background-color: #dc2626;
     }
 
     .btn-secondary {
-      background-color: rgba(255, 255, 255, 0.08);
+      background-color: rgba(255, 255, 255, 0.06);
       color: var(--text-main);
       border: 1px solid var(--border-color);
     }
 
     .btn-secondary:hover {
-      background-color: rgba(255, 255, 255, 0.12);
+      background-color: rgba(255, 255, 255, 0.1);
     }
 
-    /* Manual Trigger Form */
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
 
     .form-group label {
-      font-size: 0.8rem;
-      font-weight: 500;
+      font-size: 0.75rem;
+      font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -317,39 +382,121 @@
       gap: 1rem;
     }
 
-    /* Downloads & Setup info */
-    .guide-card {
+    /* Live Progress Bar Components */
+    .progress-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .progress-bar-wrapper {
+      width: 100%;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      border-radius: 10px;
+      box-shadow: 0 0 12px var(--accent-blue);
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .progress-text-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .progress-pct {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Sync Dashboard Elements */
+    .sync-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .sync-metrics-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .metric-box {
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 1.25rem;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.35rem;
     }
 
-    .guide-card h3 {
-      font-size: 0.95rem;
-      font-weight: 600;
+    .metric-box.active-primary {
+      border-color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.02);
+    }
+
+    .metric-box h4 {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
       color: var(--text-main);
     }
 
-    .guide-card p {
-      font-size: 0.8rem;
+    .metric-sub {
+      font-size: 0.75rem;
       color: var(--text-muted);
-      line-height: 1.4;
     }
 
-    .guide-card code {
-      font-family: monospace;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 0.2rem 0.4rem;
-      border-radius: 4px;
-      color: #60a5fa;
-      font-size: 0.8rem;
+    /* Datatable Controls */
+    .table-filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
     }
 
-    /* Alerts */
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid var(--border-color);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Alerts / Toast */
     .toast {
       position: fixed;
       bottom: 2rem;
@@ -359,14 +506,11 @@
       color: #fff;
       font-size: 0.9rem;
       font-weight: 500;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
       transform: translateY(100px);
       opacity: 0;
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .toast.show {
@@ -374,24 +518,18 @@
       opacity: 1;
     }
 
-    .toast-success {
-      background-color: var(--accent-green);
-    }
+    .toast-success { background-color: var(--accent-green); }
+    .toast-error { background-color: var(--accent-red); }
+    .toast-warning { background-color: var(--accent-yellow); }
 
-    .toast-error {
-      background-color: var(--accent-red);
-    }
-
-    /* Empty state */
     .empty-state {
       text-align: center;
       padding: 3rem 1rem;
       color: var(--text-muted);
-      font-size: 0.9rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
     }
 
     .loader {
@@ -411,154 +549,345 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <header>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
       <div class="brand">
-        <h1>TallyPrime + WhatsApp Gateway</h1>
-        <p>Real-time Sales Invoices WhatsApp Delivery Agent & Dashboard</p>
-      </div>
-      <div>
-        <button class="btn btn-secondary" onclick="fetchHealth()">Refresh Status</button>
-      </div>
-    </header>
-
-    <!-- Health Grid -->
-    <div class="status-grid">
-      <div class="status-card">
-        <div class="status-info">
-          <h3>TallyPrime Server</h3>
-          <div class="status-val" id="tally-status">
-            <span class="indicator ind-offline"></span>
-            Checking...
-          </div>
-        </div>
-      </div>
-      <div class="status-card">
-        <div class="status-info">
-          <h3>Redis Worker Queue</h3>
-          <div class="status-val" id="redis-status">
-            <span class="indicator ind-offline"></span>
-            Checking...
-          </div>
-        </div>
-      </div>
-      <div class="status-card">
-        <div class="status-info">
-          <h3>WhatsApp Channel</h3>
-          <div class="status-val" id="wa-status">
-            <span class="indicator ind-offline"></span>
-            Checking...
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Workspace Grid -->
-    <div class="dashboard-grid">
-      <!-- Left side: Invoices from Tally -->
-      <div class="panel">
-        <div class="panel-header">
-          <h2>Sales Invoices inside Tally</h2>
-          <div style="display: flex; gap: 0.5rem;">
-            <button class="btn btn-secondary" onclick="pushSampleToTally()">
-              Push Sample Vouchers
-            </button>
-            <button class="btn btn-primary" onclick="fetchTallyInvoices()">
-              Sync from Tally
-            </button>
-          </div>
-        </div>
-
-        <div class="table-container">
-          <table id="invoices-table">
-            <thead>
-              <tr>
-                <th>Voucher No</th>
-                <th>Date</th>
-                <th>Party/Customer Name</th>
-                <th>Amount</th>
-                <th>WhatsApp Number</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="invoices-tbody">
-              <tr>
-                <td colspan="7">
-                  <div class="empty-state">
-                    <p>Click "Sync from Tally" to query Sales Vouchers directly from your active Tally Prime database.</p>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <h1>TallyPrime Sync</h1>
+        <p>Production Level Sync & Delivery</p>
       </div>
 
-      <!-- Right side: Manual messaging form & Guides -->
-      <div style="display: flex; flex-direction: column; gap: 2rem;">
-        <!-- Manual Form -->
+      <nav style="flex-grow: 1;">
+        <ul class="nav-list">
+          <li class="nav-item active" id="nav-whatsapp">
+            <span>💬</span> WhatsApp Gateway
+          </li>
+          <li class="nav-item" id="nav-sync">
+            <span>⚡</span> Bulk Tally Sync Engine
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <p>Active User: TallyAdmin</p>
+        <p>Gateway: ONLINE (9000)</p>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- ================= TAB 1: WHATSAPP GATEWAY ================= -->
+      <section id="tab-whatsapp" class="tab-content active">
+        <!-- Status Grid -->
+        <div class="status-grid">
+          <div class="status-card">
+            <div class="status-info">
+              <h3>TallyPrime Server</h3>
+              <div class="status-val" id="tally-status">
+                <span class="indicator ind-offline"></span> Checking...
+              </div>
+            </div>
+          </div>
+          <div class="status-card">
+            <div class="status-info">
+              <h3>Redis Worker Queue</h3>
+              <div class="status-val" id="redis-status">
+                <span class="indicator ind-offline"></span> Checking...
+              </div>
+            </div>
+          </div>
+          <div class="status-card">
+            <div class="status-info">
+              <h3>WhatsApp Channel</h3>
+              <div class="status-val" id="wa-status">
+                <span class="indicator ind-offline"></span> Checking...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Primary Layout for WhatsApp Tab -->
+        <div class="dashboard-grid">
+          <!-- Left side: Vouchers List -->
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Sales Vouchers (WhatsApp Webhook)</h2>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" onclick="pushSampleToTally()">
+                  Push Sample Vouchers
+                </button>
+                <button class="btn btn-primary" onclick="fetchTallyInvoices()">
+                  Sync from Tally
+                </button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table id="invoices-table">
+                <thead>
+                  <tr>
+                    <th>Voucher No</th>
+                    <th>Date</th>
+                    <th>Party/Customer Name</th>
+                    <th>Amount</th>
+                    <th>WhatsApp Number</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="invoices-tbody">
+                  <tr>
+                    <td colspan="7">
+                      <div class="empty-state">
+                        <p>Click "Sync from Tally" to fetch recent sales vouchers from your active Tally Prime database.</p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right side: Manual WhatsApp Form -->
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Manual WhatsApp Send</h2>
+            </div>
+            <form id="manual-send-form" onsubmit="handleManualSend(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+              <div class="form-group">
+                <label for="m-company">Company Name</label>
+                <input type="text" id="m-company" class="input-field" value="Demo Company" required>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="m-voucher">Invoice Number</label>
+                  <input type="text" id="m-voucher" class="input-field" placeholder="INV-001" required>
+                </div>
+                <div class="form-group">
+                  <label for="m-date">Invoice Date</label>
+                  <input type="date" id="m-date" class="input-field" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="m-party">Party/Customer Name</label>
+                <input type="text" id="m-party" class="input-field" placeholder="ABC Ledger Ltd" required>
+              </div>
+
+              <div class="form-group">
+                <label for="m-mobile">WhatsApp Mobile Number</label>
+                <input type="text" id="m-mobile" class="input-field" placeholder="918873847394" required>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="m-total">Total Amount (₹)</label>
+                  <input type="number" id="m-total" class="input-field" value="1000" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                  <label for="m-tax">Tax Amount (₹)</label>
+                  <input type="number" id="m-tax" class="input-field" value="180" min="0" step="0.01" required>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+                Send WhatsApp Notification
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: BULK TALLY SYNC ENGINE ================= -->
+      <section id="tab-sync" class="tab-content">
+        <!-- Live Live Progress Card -->
         <div class="panel">
-          <div class="panel-header">
-            <h2>Manual WhatsApp Send</h2>
+          <div class="panel-header" style="border-bottom:none; margin-bottom:0; padding-bottom:0;">
+            <div>
+              <h2 style="font-size: 1.4rem; display: flex; align-items: center; gap: 0.75rem;">
+                Bulk Transaction Synchronization Pipeline
+                <span id="sync-status-badge" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 20px; font-weight: 600; text-transform: uppercase;">● Checking...</span>
+              </h2>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Safely uploading 500,000 transaction records incrementally without freezing Tally.</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+              <button class="btn btn-success" id="btn-start" onclick="controlSync('start')">Start Sync</button>
+              <button class="btn btn-warning" id="btn-pause" onclick="controlSync('pause')" style="display:none;">Pause</button>
+              <button class="btn btn-success" id="btn-resume" onclick="controlSync('resume')" style="display:none;">Resume</button>
+              <button class="btn btn-danger" id="btn-stop" onclick="controlSync('stop')" style="display:none;">Reset Sync</button>
+            </div>
           </div>
 
-          <form id="manual-send-form" onsubmit="handleManualSend(event)" style="display: flex; flex-direction: column; gap: 1rem;">
-            <div class="form-group">
-              <label for="m-company">Company Name</label>
-              <input type="text" id="m-company" class="input-field" value="Demo Company" required>
+          <div class="progress-container" style="margin-top: 2rem;">
+            <div class="progress-text-row">
+              <span>Overall Sync Completion</span>
+              <span class="progress-pct" id="live-progress-pct">0%</span>
             </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="m-voucher">Invoice Number</label>
-                <input type="text" id="m-voucher" class="input-field" placeholder="INV-001" required>
-              </div>
-              <div class="form-group">
-                <label for="m-date">Invoice Date</label>
-                <input type="date" id="m-date" class="input-field" required>
-              </div>
+            <div class="progress-bar-wrapper">
+              <div class="progress-fill" id="live-progress-fill"></div>
             </div>
-
-            <div class="form-group">
-              <label for="m-party">Party/Customer Name</label>
-              <input type="text" id="m-party" class="input-field" placeholder="ABC Ledger Ltd" required>
+            <div class="progress-text-row" style="font-size: 0.8rem;">
+              <span id="live-sync-counts">Synced 0 / 500,000 records</span>
+              <span id="live-sync-eta">Estimated remaining: --h --m</span>
             </div>
-
-            <div class="form-group">
-              <label for="m-mobile">WhatsApp Mobile Number</label>
-              <input type="text" id="m-mobile" class="input-field" placeholder="918873847394" required>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="m-total">Total Invoice Amount (₹)</label>
-                <input type="number" id="m-total" class="input-field" value="1000" min="0" step="0.01" required>
-              </div>
-              <div class="form-group">
-                <label for="m-tax">Tax/GST Amount (₹)</label>
-                <input type="number" id="m-tax" class="input-field" value="180" min="0" step="0.01" required>
-              </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem; width: 100%;">
-              Send WhatsApp Message
-            </button>
-          </form>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <!-- Sync Metrics Counters -->
+        <div class="sync-metrics-grid">
+          <div class="metric-box">
+            <h4>Total Records Target</h4>
+            <div class="metric-value" id="sync-val-total">500,000</div>
+            <div class="metric-sub">Vouchers in Company</div>
+          </div>
+          <div class="metric-box">
+            <h4>Extracted Locally</h4>
+            <div class="metric-value" id="sync-val-extracted">0</div>
+            <div class="metric-sub" id="sync-val-pending">0 Pending Upload</div>
+          </div>
+          <div class="metric-box active-primary">
+            <h4>Uploaded to Server</h4>
+            <div class="metric-value" id="sync-val-uploaded" style="color: var(--accent-blue);">0</div>
+            <div class="metric-sub">Stored Safely in Database</div>
+          </div>
+          <div class="metric-box">
+            <h4>Failed Batches</h4>
+            <div class="metric-value" id="sync-val-failed" style="color: var(--accent-red);">0</div>
+            <div class="metric-sub" id="sync-val-speed">Speed: 0 rec/min</div>
+          </div>
+        </div>
+
+        <!-- Staging table and configs -->
+        <div class="dashboard-grid">
+          <!-- Staged Local Database View -->
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Staged Transaction Database (SQLite)</h2>
+              <div class="filter-group">
+                <input type="text" id="sync-search" class="input-field" placeholder="Search by Voucher No / Party..." oninput="handleSyncSearch()" style="width: 240px;">
+                <select id="sync-filter-status" class="input-field" onchange="fetchSyncTransactions()" style="width: 140px; cursor: pointer;">
+                  <option value="">All Statuses</option>
+                  <option value="PENDING">Pending Sync</option>
+                  <option value="SYNCED">Synced (Success)</option>
+                  <option value="FAILED">Failed</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table id="sync-table">
+                <thead>
+                  <tr>
+                    <th>Voucher No</th>
+                    <th>Date</th>
+                    <th>Voucher Type</th>
+                    <th>Party Name</th>
+                    <th>Amount</th>
+                    <th>Sync Status</th>
+                  </tr>
+                </thead>
+                <tbody id="sync-tbody">
+                  <tr>
+                    <td colspan="6">
+                      <div class="empty-state">
+                        <p>No staged transactions. Start sync to fetch vouchers from TallyPrime.</p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination-controls">
+              <span id="sync-page-info">Showing Page 1 of 1</span>
+              <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" onclick="changeSyncPage(-1)" id="sync-btn-prev" style="padding: 0.4rem 0.8rem;">Previous</button>
+                <button class="btn btn-secondary" onclick="changeSyncPage(1)" id="sync-btn-next" style="padding: 0.4rem 0.8rem;">Next</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Configuration & Failure Panel -->
+          <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Configuration -->
+            <div class="panel">
+              <div class="panel-header">
+                <h2>Tally Sync Safety Controls</h2>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div class="form-group">
+                  <label for="cfg-batch">Configured Batch Size</label>
+                  <input type="number" id="cfg-batch" class="input-field" value="1000" min="10" max="10000" onchange="updateSyncConfig()">
+                  <span style="font-size:0.7rem; color:var(--text-muted);">Recommended: 500 - 1000 records/batch</span>
+                </div>
+                <div class="form-group">
+                  <label for="cfg-delay">Request Throttling Delay (ms)</label>
+                  <input type="number" id="cfg-delay" class="input-field" value="200" min="0" max="5000" onchange="updateSyncConfig()">
+                  <span style="font-size:0.7rem; color:var(--text-muted);">Add delay to protect Tally CPU stability</span>
+                </div>
+                <div style="background:rgba(59, 130, 246, 0.05); border:1px solid var(--border-color); padding:0.85rem; border-radius:10px; font-size:0.8rem;">
+                  <p style="font-weight:600; color:#fff; margin-bottom:0.25rem;">Auto Throttle Safeguard</p>
+                  <p style="color:var(--text-muted); line-height:1.4;">If Tally response slows down or remote backend becomes unavailable, throttling delay will automatically increase.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Error panel -->
+            <div class="panel" id="sync-error-panel" style="display:none;">
+              <div class="panel-header" style="border-bottom:none; margin-bottom:0;">
+                <h2>Sync Errors Log</h2>
+                <button class="btn btn-warning" onclick="retrySyncErrors()" style="padding: 0.4rem 0.8rem;">Retry All</button>
+              </div>
+              <div id="sync-error-list" style="display:flex; flex-direction:column; gap:0.75rem; max-height:220px; overflow-y:auto; padding-top:1rem;">
+                <!-- Error rows will render here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <!-- Toast Notification -->
+  <!-- Toast Alerts -->
   <div id="toast" class="toast"></div>
 
   <script>
-    // Initialize Manual Send Form Date
-    document.getElementById('m-date').valueAsDate = new Date();
+    // Tab switching state
+    let activeTab = 'tab-whatsapp';
+    function switchTab(tabId) {
+      console.log('switchTab called with tabId:', tabId);
+      try {
+        const tabContentEl = document.getElementById(tabId);
+        if (!tabContentEl) {
+          console.error('tabId element not found in DOM:', tabId);
+          return;
+        }
+        
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        
+        tabContentEl.classList.add('active');
+        if (tabId === 'tab-whatsapp') {
+          const navWa = document.getElementById('nav-whatsapp');
+          if (navWa) navWa.classList.add('active');
+          activeTab = 'tab-whatsapp';
+          fetchHealth();
+        } else {
+          const navSync = document.getElementById('nav-sync');
+          if (navSync) navSync.classList.add('active');
+          activeTab = 'tab-sync';
+          fetchSyncStatus();
+          fetchSyncTransactions();
+          fetchSyncErrors();
+        }
+      } catch (err) {
+        console.error('Error switching tab:', err);
+      }
+    }
 
-    // Show Toast Alert
+    // Toast Notification helper
     function showToast(message, type = 'success') {
       const toast = document.getElementById('toast');
       toast.innerText = message;
@@ -568,7 +897,9 @@
       }, 4000);
     }
 
-    // Push Sample Data XML to Tally Prime
+    // ================= WHATSAPP WEBHOOK TAB LOGIC =================
+    document.getElementById('m-date').valueAsDate = new Date();
+
     async function pushSampleToTally() {
       showToast('Pushing sample data into Tally...', 'warning');
       try {
@@ -578,35 +909,29 @@
           showToast('Sample data successfully imported to Tally!', 'success');
           setTimeout(fetchTallyInvoices, 1000);
         } else {
-          showToast(`Push failed: ${data.message || 'Check if Tally company is open'}`, 'error');
+          showToast(`Push failed: ${data.message || 'Check if Tally is open'}`, 'error');
         }
       } catch (err) {
-        console.error('Error pushing data:', err);
         showToast('Connection failed.', 'error');
       }
     }
 
-    // System Health Status Check
     async function fetchHealth() {
       try {
         const res = await fetch('/health');
         const data = await res.json();
-        
         if (data.success && data.data) {
           const sys = data.data;
-          
           updateIndicator('tally-status', sys.tally);
           updateIndicator('redis-status', sys.redis);
-          
           const waStatus = document.getElementById('wa-status');
           if (sys.whatsapp === 'configured') {
-            waStatus.innerHTML = `<span class="indicator ind-online"></span> Configured (Integrated)`;
+            waStatus.innerHTML = `<span class="indicator ind-online"></span> Active Cloud API`;
           } else {
             waStatus.innerHTML = `<span class="indicator ind-warning"></span> Mock Mode`;
           }
         }
       } catch (err) {
-        console.error('Error fetching system health:', err);
         updateIndicator('tally-status', 'offline');
         updateIndicator('redis-status', 'offline');
         document.getElementById('wa-status').innerHTML = `<span class="indicator ind-offline"></span> Server Offline`;
@@ -616,7 +941,6 @@
     function updateIndicator(elementId, state) {
       const element = document.getElementById(elementId);
       const isOnline = typeof state === 'string' ? state.startsWith('connected') : false;
-      
       if (isOnline) {
         element.innerHTML = `<span class="indicator ind-online"></span> Active`;
       } else {
@@ -624,17 +948,14 @@
       }
     }
 
-    // Storage for synchronized Tally Vouchers
     let localVouchers = [];
-
-    // Query Sales Vouchers from Tally Prime
     async function fetchTallyInvoices() {
       const tbody = document.getElementById('invoices-tbody');
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align:center; padding: 3rem 0;">
+          <td colspan="7" style="text-align:center; padding:3rem 0;">
             <div class="loader"></div>
-            <p style="margin-top: 1rem; color: var(--text-muted);">Retrieving database vouchers from TallyPrime...</p>
+            <p style="margin-top:1rem; color:var(--text-muted);">Querying recent Sales Vouchers from Tally...</p>
           </td>
         </tr>
       `;
@@ -642,18 +963,17 @@
       try {
         const res = await fetch('/api/tally/vouchers');
         const data = await res.json();
-        
         if (data.success && data.data && data.data.length > 0) {
           localVouchers = data.data;
           renderVouchers(localVouchers);
-          showToast(`Synced ${localVouchers.length} vouchers from Tally!`);
+          showToast(`Retrieved ${localVouchers.length} vouchers from Tally!`);
         } else {
           localVouchers = [];
           tbody.innerHTML = `
             <tr>
-              <td colspan="6">
+              <td colspan="7">
                 <div class="empty-state">
-                  <p>No Sales Vouchers found in Tally, or Tally Server is Offline (Port 9000). Verify TallyPrime is running with a company open.</p>
+                  <p>No Sales Vouchers found in Tally, or Tally Server is Offline (Port 9000). Check if Tally company is open.</p>
                 </div>
               </td>
             </tr>
@@ -661,10 +981,9 @@
           showToast('No invoices found or Tally is offline.', 'error');
         }
       } catch (err) {
-        console.error('Error syncing vouchers:', err);
         tbody.innerHTML = `
           <tr>
-            <td colspan="6">
+            <td colspan="7">
               <div class="empty-state">
                 <p>Failed communicating with server. Check backend console logs.</p>
               </div>
@@ -676,15 +995,12 @@
       fetchHealth();
     }
 
-    // Render Vouchers inside Table
     function renderVouchers(vouchers) {
       const tbody = document.getElementById('invoices-tbody');
       tbody.innerHTML = '';
-      
       vouchers.forEach((v, index) => {
         const dateStr = v.date ? v.date.substring(0, 4) + '-' + v.date.substring(4, 6) + '-' + v.date.substring(6, 8) : 'N/A';
         const formattedAmount = Number(v.amount).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
-        
         const status = v.whatsappStatus || 'UNSENT';
         let statusBadge = '';
         if (status === 'SENT' || status === 'PROCESSED') {
@@ -705,21 +1021,18 @@
           <td>${formattedAmount}</td>
           <td>
             <div class="phone-input-wrap">
-              <input type="text" id="phone-${index}" class="input-field" value="${v.mobile || '91'}" placeholder="Enter mobile" style="padding: 0.4rem 0.6rem;">
+              <input type="text" id="phone-${index}" class="input-field" value="${v.mobile || '91'}" style="padding: 0.4rem 0.6rem;">
             </div>
           </td>
           <td>${statusBadge}</td>
           <td>
-            <button class="btn btn-success" onclick="sendWhatsAppFromRow(${index})">
-              Send WA
-            </button>
+            <button class="btn btn-success" style="padding:0.4rem 0.8rem;" onclick="sendWhatsAppFromRow(${index})">Send WA</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    // Trigger WhatsApp Message from Table Row Action
     async function sendWhatsAppFromRow(index) {
       const voucher = localVouchers[index];
       const phoneInput = document.getElementById(`phone-${index}`);
@@ -730,64 +1043,43 @@
         return;
       }
 
-      const dateRaw = voucher.date; // YYYYMMDD
+      const dateRaw = voucher.date;
       const dateFormatted = dateRaw ? dateRaw.substring(0, 4) + '-' + dateRaw.substring(4, 6) + '-' + dateRaw.substring(6, 8) : new Date().toISOString().split('T')[0];
 
-      // Formulate complete structured sales invoice payload
       const payload = {
         event: 'SALES_INVOICE_CREATED',
-        company: {
-          name: 'Demo Company',
-          gstin: '27AAAAA1111A1Z1',
-          address: 'Mumbai, Maharashtra'
-        },
+        company: { name: 'Demo Company', gstin: '27AAAAA1111A1Z1', address: 'Mumbai, MH' },
         invoice: {
           voucherNumber: voucher.voucherNumber,
           date: dateFormatted,
           partyName: voucher.partyName,
           mobile: overriddenPhone,
-          subtotal: voucher.amount - (voucher.amount * 0.18), // mock calculate back subtotal
-          tax: voucher.amount * 0.18, // mock GST
+          subtotal: voucher.amount - (voucher.amount * 0.18),
+          tax: voucher.amount * 0.18,
           total: voucher.amount
         },
-        items: [
-          {
-            name: 'General Sales Goods/Services',
-            quantity: 1,
-            rate: voucher.amount - (voucher.amount * 0.18),
-            discount: 0,
-            gst: 18,
-            amount: voucher.amount
-          }
-        ]
+        items: [{ name: 'Goods/Services', quantity: 1, rate: voucher.amount - (voucher.amount * 0.18), discount: 0, gst: 18, amount: voucher.amount }]
       };
 
       try {
         const res = await fetch('/api/tally/send-manual', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        
         if (res.ok) {
-          showToast(`WhatsApp message queued for ${voucher.voucherNumber}!`);
+          showToast(`WhatsApp notification queued for ${voucher.voucherNumber}!`);
           setTimeout(fetchTallyInvoices, 1000);
         } else {
-          showToast(`Failed: ${data.message || 'Error occurred'}`, 'error');
+          showToast('Failed to queue WhatsApp message', 'error');
         }
       } catch (err) {
-        console.error('Error manual sending:', err);
         showToast('Failed to queue message.', 'error');
       }
     }
 
-    // Handle Manual Sending Form Submission
     async function handleManualSend(e) {
       e.preventDefault();
-      
       const company = document.getElementById('m-company').value.trim();
       const voucherNumber = document.getElementById('m-voucher').value.trim();
       const date = document.getElementById('m-date').value;
@@ -798,59 +1090,310 @@
 
       const payload = {
         event: 'SALES_INVOICE_CREATED',
-        company: {
-          name: company,
-          gstin: '27AAAAA1111A1Z1',
-          address: 'Mumbai, Maharashtra'
-        },
-        invoice: {
-          voucherNumber,
-          date,
-          partyName,
-          mobile,
-          subtotal: total - tax,
-          tax,
-          total
-        },
-        items: [
-          {
-            name: 'Custom Product / Service Sales Item',
-            quantity: 1,
-            rate: total - tax,
-            discount: 0,
-            gst: Math.round((tax / (total - tax)) * 100),
-            amount: total
-          }
-        ]
+        company: { name: company, gstin: '27AAAAA1111A1Z1', address: 'Staging Address' },
+        invoice: { voucherNumber, date, partyName, mobile, subtotal: total - tax, tax, total },
+        items: [{ name: 'Goods/Services', quantity: 1, rate: total - tax, discount: 0, gst: 18, amount: total }]
       };
 
       try {
         const res = await fetch('/api/tally/send-manual', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        
         if (res.ok) {
-          showToast(`Success! Manual WhatsApp job queued.`);
+          showToast('Manual WhatsApp notification sent successfully');
           document.getElementById('manual-send-form').reset();
           document.getElementById('m-date').valueAsDate = new Date();
         } else {
-          showToast(`Failed: ${data.message || 'Error occurred'}`, 'error');
+          showToast('Failed to send notification.', 'error');
         }
       } catch (err) {
-        console.error('Error manually trigger:', err);
         showToast('Connection error.', 'error');
       }
     }
 
-    // Initial Status Check on page boot
+    // ================= TAB 2: BULK SYNC LOGIC =================
+    let syncPage = 1;
+    let syncLimit = 10;
+    let syncSearch = '';
+    let syncStatusFilter = '';
+    let syncTimer = null;
+
+    async function fetchSyncStatus() {
+      try {
+        const res = await fetch('/api/tally/sync/status');
+        const data = await res.json();
+        if (data.success && data.data) {
+          const stats = data.data;
+          
+          // Update live metrics boxes
+          document.getElementById('sync-val-total').innerText = Number(stats.totalRecords).toLocaleString();
+          document.getElementById('sync-val-extracted').innerText = Number(stats.fetched).toLocaleString();
+          document.getElementById('sync-val-pending').innerText = `${Number(stats.pending).toLocaleString()} Pending Sync`;
+          document.getElementById('sync-val-uploaded').innerText = Number(stats.synced).toLocaleString();
+          document.getElementById('sync-val-failed').innerText = Number(stats.failed).toLocaleString();
+          document.getElementById('sync-val-speed').innerText = `Speed: ${stats.syncSpeed.toLocaleString()} rec/min`;
+          
+          // Update Config input boxes if they are not active
+          if (document.activeElement !== document.getElementById('cfg-batch')) {
+            document.getElementById('cfg-batch').value = stats.batchSize;
+          }
+          if (document.activeElement !== document.getElementById('cfg-delay')) {
+            document.getElementById('cfg-delay').value = stats.delayMs;
+          }
+
+          // Update Progress Bar
+          const progressPercent = stats.progress;
+          document.getElementById('live-progress-fill').style.width = `${progressPercent}%`;
+          document.getElementById('live-progress-pct').innerText = `${progressPercent}%`;
+          document.getElementById('live-sync-counts').innerText = `Synced ${stats.synced.toLocaleString()} / ${stats.totalRecords.toLocaleString()} records`;
+          
+          // Update ETA
+          if (stats.syncState === 'RUNNING' && stats.estRemainingMinutes > 0) {
+            const hrs = Math.floor(stats.estRemainingMinutes / 60);
+            const mins = stats.estRemainingMinutes % 60;
+            document.getElementById('live-sync-eta').innerText = `Estimated remaining: ${hrs}h ${mins}m`;
+          } else if (stats.syncState === 'RUNNING' && stats.synced >= stats.totalRecords) {
+            document.getElementById('live-sync-eta').innerText = 'Synchronization fully caught up!';
+          } else {
+            document.getElementById('live-sync-eta').innerText = 'Remaining: --h --m (Sync stopped/paused)';
+          }
+
+          // Update UI Button controls based on state
+          const startBtn = document.getElementById('btn-start');
+          const pauseBtn = document.getElementById('btn-pause');
+          const resumeBtn = document.getElementById('btn-resume');
+          const stopBtn = document.getElementById('btn-stop');
+          const statusBadge = document.getElementById('sync-status-badge');
+
+          if (stats.syncState === 'RUNNING') {
+            startBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-flex';
+            resumeBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-flex';
+            
+            if (statusBadge) {
+              statusBadge.innerText = '● Running';
+              statusBadge.style.background = 'rgba(16, 185, 129, 0.12)';
+              statusBadge.style.color = 'var(--accent-green)';
+            }
+          } else if (stats.syncState === 'PAUSED') {
+            startBtn.style.display = 'none';
+            pauseBtn.style.display = 'none';
+            resumeBtn.style.display = 'inline-flex';
+            stopBtn.style.display = 'inline-flex';
+
+            if (statusBadge) {
+              statusBadge.innerText = '● Paused';
+              statusBadge.style.background = 'rgba(245, 158, 11, 0.12)';
+              statusBadge.style.color = 'var(--accent-yellow)';
+            }
+          } else { // STOPPED
+            startBtn.style.display = 'inline-flex';
+            pauseBtn.style.display = 'none';
+            resumeBtn.style.display = 'none';
+            stopBtn.style.display = 'none';
+
+            if (statusBadge) {
+              statusBadge.innerText = '● Stopped / Idle';
+              statusBadge.style.background = 'rgba(239, 68, 68, 0.12)';
+              statusBadge.style.color = 'var(--accent-red)';
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching sync status:', err);
+      }
+    }
+
+    async function controlSync(action) {
+      try {
+        const res = await fetch(`/api/tally/sync/${action}`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`Sync state successfully changed: ${action.toUpperCase()}`);
+          fetchSyncStatus();
+          setTimeout(() => {
+            fetchSyncTransactions();
+            fetchSyncErrors();
+          }, 500);
+        } else {
+          showToast(`Action failed: ${data.message}`, 'error');
+        }
+      } catch (err) {
+        showToast('HTTP call failed.', 'error');
+      }
+    }
+
+    async function fetchSyncTransactions() {
+      const tbody = document.getElementById('sync-tbody');
+      const searchInput = document.getElementById('sync-search').value.trim();
+      const statusSelect = document.getElementById('sync-filter-status').value;
+
+      try {
+        const url = `/api/tally/sync/transactions?page=${syncPage}&limit=${syncLimit}&search=${encodeURIComponent(searchInput)}&status=${statusSelect}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        
+        if (data.success && data.data) {
+          const list = data.data.transactions;
+          const totalPages = data.data.totalPages || 1;
+          
+          document.getElementById('sync-page-info').innerText = `Page ${syncPage} of ${totalPages} (Total: ${data.data.total})`;
+          
+          document.getElementById('sync-btn-prev').disabled = syncPage <= 1;
+          document.getElementById('sync-btn-next').disabled = syncPage >= totalPages;
+
+          if (list.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="6">
+                  <div class="empty-state">
+                    <p>No transactions match your search filter criteria.</p>
+                  </div>
+                </td>
+              </tr>
+            `;
+            return;
+          }
+
+          tbody.innerHTML = '';
+          list.forEach(v => {
+            const formattedAmount = Number(v.amount).toLocaleString('en-IN', { style: 'currency', currency: 'INR' });
+            
+            // formatting YYYYMMDD to YYYY-MM-DD
+            let dateStr = v.date;
+            if (dateStr && dateStr.length === 8) {
+              dateStr = dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8);
+            }
+
+            let badge = '';
+            if (v.sync_status === 'SYNCED') {
+              badge = '<span style="color:var(--accent-green); font-weight:600;">✔ SYNCED</span>';
+            } else if (v.sync_status === 'FAILED') {
+              badge = `<span style="color:var(--accent-red); font-weight:600; cursor:help;" title="${v.error_message || 'Unknown error'}">❌ FAILED</span>`;
+            } else {
+              badge = '<span style="color:var(--accent-blue); font-weight:600;">⏳ PENDING</span>';
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><b>${v.voucher_number || 'N/A'}</b></td>
+              <td>${dateStr || 'N/A'}</td>
+              <td>${v.voucher_type}</td>
+              <td>${v.party_name}</td>
+              <td>${formattedAmount}</td>
+              <td>${badge}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching staged txs:', err);
+      }
+    }
+
+    async function fetchSyncErrors() {
+      try {
+        const res = await fetch('/api/tally/sync/errors');
+        const data = await res.json();
+        
+        const errorPanel = document.getElementById('sync-error-panel');
+        const errorList = document.getElementById('sync-error-list');
+
+        if (data.success && data.data && data.data.length > 0) {
+          errorPanel.style.display = 'block';
+          errorList.innerHTML = '';
+          
+          data.data.forEach(err => {
+            const el = document.createElement('div');
+            el.style.background = 'rgba(239, 68, 68, 0.08)';
+            el.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+            el.style.padding = '0.75rem';
+            el.style.borderRadius = '8px';
+            el.style.fontSize = '0.8rem';
+            el.innerHTML = `
+              <div style="display:flex; justify-content:space-between; font-weight:600; margin-bottom:0.25rem;">
+                <span style="color:#fff;">Voucher: ${err.voucher_number || 'N/A'}</span>
+                <span style="color:var(--accent-red);">Failed Sync</span>
+              </div>
+              <div style="color:var(--text-muted); line-height:1.4;">${err.error_message || 'Network Timeout'}</div>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">Attempted: ${err.last_sync_attempt}</div>
+            `;
+            errorList.appendChild(el);
+          });
+        } else {
+          errorPanel.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Error fetching sync errors:', err);
+      }
+    }
+
+    async function retrySyncErrors() {
+      showToast('Queueing failed batches for sync retry...', 'warning');
+      try {
+        const res = await fetch('/api/tally/sync/retry-failed', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(data.message || 'Retrying failed batches');
+          fetchSyncStatus();
+          fetchSyncTransactions();
+          fetchSyncErrors();
+        } else {
+          showToast('Retry action failed', 'error');
+        }
+      } catch (err) {
+        showToast('Network error.', 'error');
+      }
+    }
+
+    async function updateSyncConfig() {
+      const batchSize = parseInt(document.getElementById('cfg-batch').value, 10);
+      const delayMs = parseInt(document.getElementById('cfg-delay').value, 10);
+
+      try {
+        const res = await fetch('/api/tally/sync/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batchSize, delayMs })
+        });
+        if (res.ok) {
+          showToast('Sync safety configurations successfully updated');
+          fetchSyncStatus();
+        }
+      } catch (err) {
+        console.error('Error saving config:', err);
+      }
+    }
+
+    function handleSyncSearch() {
+      syncPage = 1;
+      fetchSyncTransactions();
+    }
+
+    function changeSyncPage(dir) {
+      syncPage += dir;
+      fetchSyncTransactions();
+    }
+
+    // Auto-update loops for sync monitoring when dashboard tab is active
+    setInterval(() => {
+      if (activeTab === 'tab-sync') {
+        fetchSyncStatus();
+        fetchSyncTransactions();
+        fetchSyncErrors();
+      }
+    }, 2000);
+
+    // Initial Load
     fetchHealth();
-    // Refresh status check every 30 seconds
-    setInterval(fetchHealth, 30000);
+    fetchTallyInvoices();
+
+    // Bind tab clicks programmatically to bypass CSP restrictions
+    document.getElementById('nav-whatsapp').addEventListener('click', () => switchTab('tab-whatsapp'));
+    document.getElementById('nav-sync').addEventListener('click', () => switchTab('tab-sync'));
   </script>
 </body>
 </html>

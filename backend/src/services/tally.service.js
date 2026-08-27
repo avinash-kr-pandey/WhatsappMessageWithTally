@@ -299,13 +299,21 @@ class TallyService {
         const collection = parsed.ENVELOPE.BODY.DATA.COLLECTION;
         if (collection.VOUCHER) {
           const rawVouchers = Array.isArray(collection.VOUCHER) ? collection.VOUCHER : [collection.VOUCHER];
+          const cleanXmlString = (val) => {
+            if (!val) return '';
+            if (typeof val === 'object') {
+              return String(val._ || '').trim();
+            }
+            return String(val).trim();
+          };
+
           vouchers = rawVouchers.map(v => {
-            const partyName = v.PARTYLEDGERNAME || '';
-            const voucherNumber = v.VOUCHERNUMBER || '';
-            const date = v.DATE || '';
-            const amount = parseFloat(v.AMOUNT || '0');
-            const partyMobile = typeof v.PARTYMOBILE === 'string' ? v.PARTYMOBILE : '';
-            const partyPhone = typeof v.PARTYPHONE === 'string' ? v.PARTYPHONE : '';
+            const partyName = cleanXmlString(v.PARTYLEDGERNAME);
+            const voucherNumber = cleanXmlString(v.VOUCHERNUMBER);
+            const date = cleanXmlString(v.DATE);
+            const amount = parseFloat(cleanXmlString(v.AMOUNT) || '0');
+            const partyMobile = cleanXmlString(v.PARTYMOBILE);
+            const partyPhone = cleanXmlString(v.PARTYPHONE);
 
             return {
               voucherNumber,

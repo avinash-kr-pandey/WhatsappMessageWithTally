@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const tallyRoutes = require('./routes/tally.routes');
+const syncServerRoutes = require('./routes/sync-server.routes');
 const whatsappRoutes = require('./routes/whatsapp.routes');
 const { errorHandler } = require('./middleware/error.middleware');
 const config = require('./config/env');
@@ -12,16 +13,10 @@ const { successResponse } = require('./utils/response');
 
 const app = express();
 
+
 // 1. Security Middlewares
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-    },
-  },
+  contentSecurityPolicy: false,
 }));
 app.use(cors());
 
@@ -42,6 +37,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // 3. API Routing
 app.use('/api/tally', tallyRoutes);
+app.use('/api/tally', syncServerRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 
 // 4. Health Check Endpoint
